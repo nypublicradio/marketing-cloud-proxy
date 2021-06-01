@@ -37,10 +37,7 @@ jobs:
           command: |
             . ~/.venv/bin/activate
             cc-test-reporter before-build
-            pytest \
-              --junitxml=test-results/pytest/results.xml \
-              --cov-report=xml:coverage.xml
-            cc-test-reporter after-build --coverage-input-type coverage.py --exit-code $?
+            pytest
       - save_cache:
           <<: *cache_key
           paths:
