@@ -68,12 +68,16 @@ jobs:
             else
               exit 1
             fi
-            . ~/.venv/bin/activate
-            python setup.py deploy \
-              --environment=$ENV \
-              --function-name=marketing-cloud-proxy \
-              --function-handler=marketing-cloud-proxy.handler \
-              --package-dir=workspace/task
+            if [[ ! -d ~/.venv ]]; then
+              python -m venv ~/.venv
+              . ~/.venv/bin/activate
+              pip install --upgrade pip
+              pip install -U git+https://github.com/nypublicradio/nyprsetuptools.git
+              pip install -e .
+              python setup.py test_requirements
+              curl -L "$CC_REPORTER" > ~/.venv/bin/cc-test-reporter
+              chmod +x ~/.venv/bin/cc-test-reporter
+            fi
 
 workflows:
   version: 2
