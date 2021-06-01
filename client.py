@@ -10,10 +10,21 @@ REFRESH_TOKEN_TABLE = (
 )
 client = boto3.client("dynamodb")
 
-config = {}
+config = {
+    'accountId': os.environ.get('MC_ACCOUNT_ID'),
+    'appsignature': 'none',
+    'authenticationurl': os.environ.get('MC_AUTHENTICATION_URL'),
+    'baseapiurl': os.environ.get('MC_BASE_API_URL'),
+    'clientid': os.environ.get('MC_CLIENT_ID'),
+    'clientsecret': os.environ.get('MC_CLIENT_SECRET'),
+    'defaultwsdl': os.environ.get('MC_DEFAULT_WSDL'),
+    'soapendpoint': os.environ.get('MC_SOAP_ENDPOINT'),
+    'useOAuth2Authentication': 'True',
+    'wsdl_file_local_loc': os.environ.get("MC_WSDL_FILE_LOCAL_LOCATION")
+}
 
 
-class MarketingCloudClient:
+class MarketingCloudAuthManager:
     @staticmethod
     def retrieve_token_data_from_dynamo():
         token_item = client.get_item(
@@ -49,7 +60,7 @@ class MarketingCloudClient:
             "none",
         )
         if cls.is_token_expired(token_data):
-            fuel_client = FuelSDK.ET_Client()
+            fuel_client = FuelSDK.ET_Client(False, False, config)
             client.put_item(
                 TableName=REFRESH_TOKEN_TABLE,
                 Item={
@@ -66,44 +77,6 @@ class MarketingCloudClient:
             )
             return fuel_client
 
-        return FuelSDK.ET_Client(False, False, {"jwt": jwt_token})
+        return FuelSDK.ET_Client(False, False, {"jwt": jwt_token, **config})
 
 
-client = MarketingCloudClient.instantiate_client()
-
-import FuelSDK as ET_Client
-
-stubObj = client
-NameOfDE = "ThisWillBeDeleted-Test"
-
-de2 = ET_Client.ET_DataExtension()
-de2.auth_stub = stubObj
-de2.props = {"Name": NameOfDE, "CustomerKey": NameOfDE}
-de2.columns = [
-    {
-        "Name": "Name",
-        "FieldType": "Text",
-        "IsPrimaryKey": "true",
-        "MaxLength": "100",
-        "IsRequired": "true",
-    },
-    {"Name": "OtherField", "FieldType": "Text"},
-]
-postResponse = de2.post()
-print("Post Status: " + str(postResponse.status))
-print("Code: " + str(postResponse.code))
-print("Message: " + str(postResponse.message))
-print("Results: " + str(postResponse.results))
-
-myDEColumn = ET_Client.ET_DataExtension_Column()
-myDEColumn.auth_stub = stubObj
-myDEColumn.props = ["Name"]
-myDEColumn.search_filter = {
-    "Property": "CustomerKey",
-    "SimpleOperator": "equals",
-    "Value": NameOfDE,
-}
-getResponse = myDEColumn.get()
-
-
-print("We did it")

@@ -7,6 +7,9 @@ setup(
     author='NYPR Digital',
     author_email='digitalops@nypublicradio.org',
     description=__doc__,
+    dependency_links=[
+        'https://github.com/nypublicradio/nyprsetuptools/tarball/master#egg=nyprsetuptools'
+    ],
     entry_points={
         'distutils.commands': [
             'requirements = nyprsetuptools:InstallRequirements',
@@ -22,9 +25,10 @@ setup(
         ],
     },
     install_requires=[
-        'PyJWT=1.7.1',
-        'Salesforce-FuelSDK'
+        'PyJWT==1.7.1',
+        'Salesforce-FuelSDK',
         'flask',
+        'python-dotenv',
     ],
     license='BSD',
     long_description=__doc__,
@@ -32,7 +36,7 @@ setup(
     package_data={},
     scripts=[],
     setup_requires=[
-        'nyprsetuptools@https://github.com/nypublicradio/nyprsetuptools/tarball/master'
+        'nyprsetuptools'
     ],
     tests_require=[
         'moto',
