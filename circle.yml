@@ -83,22 +83,6 @@ workflows:
           filters:
             tags:
               only: /.*/
-      - build_lambda:
-          requires:
-            - test
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+/
-            branches:
-              only: master
-      - deploy_lambda:
-          requires:
-            - build_lambda
-          filters:
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+/
-            branches:
-              only: master
 
 experimental:
   notify:
