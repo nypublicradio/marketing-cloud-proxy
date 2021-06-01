@@ -1,0 +1,110 @@
+---
+templates:
+
+  cache_key: &cache_key
+    key: v1-{{ checksum "setup.py" }}-{{ checksum "circle.yml" }}
+
+version: 2
+jobs:
+
+  test:
+    working_directory: ~/marketing-cloud-proxy
+    docker:
+      - image: circleci/python:3.6
+    environment:
+      CC_REPORTER: "https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64"
+    steps:
+      - checkout
+      - restore_cache:
+          <<: *cache_key
+      - run:
+          name: Install Requirements
+          command: |
+            if [[ ! -d ~/.venv ]]; then
+              python -m venv ~/.venv
+              . ~/.venv/bin/activate
+              pip install --upgrade pip
+              pip install -U git+https://github.com/nypublicradio/nyprsetuptools.git
+              pip install -e .
+              python setup.py test_requirements
+              curl -L "$CC_REPORTER" > ~/.venv/bin/cc-test-reporter
+              chmod +x ~/.venv/bin/cc-test-reporter
+            fi
+          environment:
+            CFLAGS: "-I/var/task/include -L/var/task/lib"
+      - run:
+          name: Test
+          command: |
+            . ~/.venv/bin/activate
+            cc-test-reporter before-build
+            pytest \
+              --junitxml=test-results/pytest/results.xml \
+              --cov-report=xml:coverage.xml
+            cc-test-reporter after-build --coverage-input-type coverage.py --exit-code $?
+      - save_cache:
+          <<: *cache_key
+          paths:
+            - ~/.venv
+            - ~/marketing-cloud-proxy/marketing-cloud-proxy.egg-info
+            - ~/marketing-cloud-proxy/.eggs
+            - ~/marketing-cloud-proxy/bin
+
+  deploy_lambda:
+    working_directory: ~/marketing-cloud-proxy
+    docker:
+      - image: circleci/python:3.6
+    steps:
+      - checkout
+      - restore_cache:
+          <<: *cache_key
+      - run:
+          name: Deploy Lambda
+          command: |
+            if [[ "${CIRCLE_BRANCH}" == "master" ]]; then
+              export ENV=demo
+              export TAG=demo
+              export DEMO_RELEASE="$CIRCLE_SHA1"
+            elif echo "$CIRCLE_TAG" | grep -q "v[0-9]\+\.[0-9]\+\.[0-9]\+"; then
+              export ENV=prod
+              export TAG=$CIRCLE_TAG
+              export PROD_RELEASE="$TAG"
+            else
+              exit 1
+            fi
+            . ~/.venv/bin/activate
+            python setup.py deploy \
+              --environment=$ENV \
+              --function-name=marketing-cloud-proxy \
+              --function-handler=marketing-cloud-proxy.handler \
+              --package-dir=workspace/task
+
+workflows:
+  version: 2
+  build-test-deploy:
+    jobs:
+      - test:
+          filters:
+            tags:
+              only: /.*/
+      - build_lambda:
+          requires:
+            - test
+          filters:
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+/
+            branches:
+              only: master
+      - deploy_lambda:
+          requires:
+            - build_lambda
+          filters:
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+/
+            branches:
+              only: master
+
+experimental:
+  notify:
+    branches:
+      only:
+        - master
