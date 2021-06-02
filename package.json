@@ -11,6 +11,6 @@
   "license": "ISC",
   "devDependencies": {
     "serverless-python-requirements": "^5.1.1",
-    "serverless-wsgi": "^1.7.7"
+    "serverless-wsgi": "^1.7.8"
   }
 }
