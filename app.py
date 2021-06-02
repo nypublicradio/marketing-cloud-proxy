@@ -4,7 +4,7 @@ import FuelSDK as ET_Client
 from flask import Flask, request, Response
 from werkzeug.exceptions import BadRequestKeyError
 
-from .client import MarketingCloudAuthManager
+from client import MarketingCloudAuthManager
 
 app = Flask(__name__)
 
