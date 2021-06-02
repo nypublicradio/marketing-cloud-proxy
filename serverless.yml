@@ -1,6 +1,6 @@
 # serverless.yml
 
-service: serverless-flask
+service: marketing-cloud-proxy
 
 useDotenv: true
 
@@ -49,10 +49,9 @@ package:
   patterns:
     '!.direnv'
 
-
 functions:
   app:
-    name: ${env:APP_NAME}-${env:ENV}
+    name: ${env:APP_NAME}
     handler: wsgi_handler.handler
     events:
       - http: ANY /
