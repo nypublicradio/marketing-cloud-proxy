@@ -57,7 +57,7 @@ jobs:
       - run:
           name: Deploy Lambda
           command: |
-            if [[ "${CIRCLE_BRANCH}" == "master" ]]; then
+            if [[ "${CIRCLE_BRANCH}" == "main" ]]; then
               export ENV=demo
               export TAG=demo
               export DEMO_RELEASE="$CIRCLE_SHA1"
@@ -102,4 +102,4 @@ experimental:
   notify:
     branches:
       only:
-        - master
+        - main
