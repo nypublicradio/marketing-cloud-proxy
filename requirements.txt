@@ -1,6 +1,7 @@
 PyJWT==1.7.1
 Salesforce-FuelSDK
+Werkzeug==1.0.1
 boto3
 boto3
-flask
+flask==1.1.4
 python-dotenv
