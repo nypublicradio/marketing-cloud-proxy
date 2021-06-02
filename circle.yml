@@ -74,10 +74,10 @@ jobs:
               pip install --upgrade pip
               pip install -U git+https://github.com/nypublicradio/nyprsetuptools.git
               pip install -e .
-              python setup.py test_requirements
-              curl -L "$CC_REPORTER" > ~/.venv/bin/cc-test-reporter
-              chmod +x ~/.venv/bin/cc-test-reporter
             fi
+            sudo apt-get install -y nodejs npm
+            sudo npm install -g serverless
+            npm install
 
 workflows:
   version: 2
@@ -87,6 +87,16 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - deploy_lambda:
+          requires:
+            - test
+          filters:
+            tags:
+              only:
+                - /^v[0-9]+\.[0-9]+\.[0-9]+/
+                - demo
+            branches:
+              only: main
 
 experimental:
   notify:
