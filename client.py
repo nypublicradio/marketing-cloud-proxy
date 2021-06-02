@@ -35,7 +35,12 @@ class MarketingCloudAuthManager:
             TableName=REFRESH_TOKEN_TABLE,
             Key={"KeyName": {"S": "MarketingCloudAuthTokenExpiration"}},
         )
-        token = token_item["Item"]["KeyValue"]["S"]
+
+        try:
+            token = token_item["Item"]["KeyValue"]["S"]
+        except KeyError:
+            return
+
         token_expiration = float(token_expiration_item["Item"]["KeyValue"]["N"])
 
         return {
@@ -49,16 +54,16 @@ class MarketingCloudAuthManager:
         """Checks the expiration time for the current token and, if it is set to
         expire in less than 5 minutes, considers it 'expired' and returns
         True"""
+        if not token_data:
+            return True
+
         if (token_data["expiresIn"] - time.time()) < 300:
             return True
 
     @classmethod
     def instantiate_client(cls):
         token_data = cls.retrieve_token_data_from_dynamo()
-        jwt_token = jwt.encode(
-            {"request": {"user": {**token_data}}},
-            "none",
-        )
+
         if cls.is_token_expired(token_data):
             fuel_client = FuelSDK.ET_Client(False, False, config)
             client.put_item(
@@ -76,6 +81,11 @@ class MarketingCloudAuthManager:
                 },
             )
             return fuel_client
+
+        jwt_token = jwt.encode(
+            {"request": {"user": {**token_data}}},
+            "none",
+        )
 
         return FuelSDK.ET_Client(False, False, {"jwt": jwt_token, **config})
 
