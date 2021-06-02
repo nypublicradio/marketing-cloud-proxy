@@ -58,13 +58,15 @@ jobs:
           name: Deploy Lambda
           command: |
             if [[ "${CIRCLE_BRANCH}" == "main" ]]; then
-              export ENV=demo
               export TAG=demo
               export DEMO_RELEASE="$CIRCLE_SHA1"
+              env | sed -n 's/^DEMO_//p' > .env
+              export TARGET=demo
             elif echo "$CIRCLE_TAG" | grep -q "v[0-9]\+\.[0-9]\+\.[0-9]\+"; then
-              export ENV=prod
               export TAG=$CIRCLE_TAG
               export PROD_RELEASE="$TAG"
+              env | sed -n 's/^PROD_//p' > .env
+              export TARGET=production
             else
               exit 1
             fi
