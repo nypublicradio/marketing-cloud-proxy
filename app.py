@@ -8,6 +8,8 @@ from client import MarketingCloudAuthManager
 
 app = Flask(__name__)
 
+path_prefix = os.environ.get("APP_NAME")
+
 client = MarketingCloudAuthManager.instantiate_client()
 
 
@@ -16,7 +18,7 @@ def healthcheck():
     return Response(status=204)
 
 
-@app.route("/subscribe", methods=["GET", "POST"])
+@app.route(f"/{path_prefix}/subscribe", methods=["GET", "POST"])
 def subscribe():
     stubObj = client
 
@@ -56,7 +58,7 @@ def subscribe():
     return "Added"
 
 
-@app.route("/update")
+@app.route(f"/{path_prefix}/update")
 def update():
     stubObj = client
 
@@ -78,7 +80,7 @@ def update():
     return "Updated"
 
 
-@app.route("/lists")
+@app.route(f"/{path_prefix}/lists")
 def lists():
     stubObj = client
 

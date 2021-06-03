@@ -9,7 +9,7 @@ plugins:
   - serverless-wsgi
 
 custom:
-  tableName: ${env:REFRESH_TOKEN_TABLE}
+  tableName: ${env:REFRESH_TOKEN_TABLE}-${env:ENV}
   wsgi:
     app: app.app
     packRequirements: false
@@ -51,7 +51,7 @@ package:
 
 functions:
   app:
-    name: ${env:APP_NAME}
+    name: ${env:APP_NAME}-${env:ENV}
     handler: wsgi_handler.handler
     events:
       - http: ANY /
