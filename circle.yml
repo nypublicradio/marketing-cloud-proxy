@@ -80,7 +80,14 @@ jobs:
             sudo apt-get install -y nodejs npm
             sudo npm install -g serverless
             npm install
-            sls deploy
+            sls package
+            unzip .serverless/marketing-cloud-proxy.zip -d .serverless/dist
+            python setup.py deploy \
+              --environment=$ENV \
+              --function-name=marketing-cloud-proxy \
+              --function-handler=wsgi_handler.handler \
+              --package-dir=.serverless/dist \
+              --no-s3
 
 workflows:
   version: 2
