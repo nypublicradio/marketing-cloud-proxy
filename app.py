@@ -55,7 +55,7 @@ def subscribe():
     }
     de4.patch()
 
-    return {"status": "Success", "message": "Email successfully added"}
+    return {"status": "success", "message": "Email successfully added"}
 
 
 @app.route(f"/{path_prefix}/update")
