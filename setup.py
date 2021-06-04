@@ -27,6 +27,7 @@ setup(
     install_requires=[
         'PyJWT==1.7.1',
         'Salesforce-FuelSDK',
+        'boto3',
         'flask',
         'python-dotenv',
     ],
