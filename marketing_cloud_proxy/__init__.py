@@ -1,0 +1,1 @@
+from marketing_cloud_proxy.wsgi_handler import handler

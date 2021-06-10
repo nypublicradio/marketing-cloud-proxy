@@ -4,23 +4,24 @@ import FuelSDK as ET_Client
 from flask import Flask, request, Response
 from werkzeug.exceptions import BadRequestKeyError
 
-from client import MarketingCloudAuthManager
+from marketing_cloud_proxy.client import MarketingCloudAuthManager
 
 app = Flask(__name__)
 
 path_prefix = os.environ.get("APP_NAME")
 
-client = MarketingCloudAuthManager.instantiate_client()
+def get_client():
+    return MarketingCloudAuthManager.instantiate_client()
 
 
-@app.route("/")
+@app.route(f"/{path_prefix}/", methods=["GET"])
 def healthcheck():
     return Response(status=204)
 
 
 @app.route(f"/{path_prefix}/subscribe", methods=["GET", "POST"])
 def subscribe():
-    stubObj = client
+    stubObj = get_client()
 
     de4 = ET_Client.ET_DataExtension_Row()
     de4.CustomerKey = os.environ.get("MC_DATA_EXTENSION")
@@ -60,7 +61,7 @@ def subscribe():
 
 @app.route(f"/{path_prefix}/update")
 def update():
-    stubObj = client
+    stubObj = get_client()
 
     de4 = ET_Client.ET_DataExtension_Row()
     de4.CustomerKey = os.environ.get("MC_DATA_EXTENSION")
@@ -82,7 +83,7 @@ def update():
 
 @app.route(f"/{path_prefix}/lists")
 def lists():
-    stubObj = client
+    stubObj = get_client()
 
     myDEColumn = ET_Client.ET_DataExtension_Column()
     myDEColumn.auth_stub = stubObj

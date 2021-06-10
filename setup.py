@@ -3,13 +3,13 @@ Salesforce Marketing Cloud proxy to simplify newsletter subscription
 """
 from setuptools import setup
 
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
+
 setup(
     author='NYPR Digital',
     author_email='digitalops@nypublicradio.org',
     description=__doc__,
-    dependency_links=[
-        'https://github.com/nypublicradio/nyprsetuptools/tarball/master#egg=nyprsetuptools'
-    ],
     entry_points={
         'distutils.commands': [
             'requirements = nyprsetuptools:InstallRequirements',
@@ -28,16 +28,20 @@ setup(
         'PyJWT==1.7.1',
         'Salesforce-FuelSDK',
         'boto3',
-        'flask',
+        'flask==1.1.4',
+        'Werkzeug==1.0.1',
         'python-dotenv',
+        'serverless-wsgi',
     ],
     license='BSD',
-    long_description=__doc__,
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     name='marketing-cloud-proxy',
     package_data={},
+    packages=['marketing_cloud_proxy'],
     scripts=[],
     setup_requires=[
-        'nyprsetuptools'
+        'nyprsetuptools @ git+https://github.com/nypublicradio/nyprsetuptools@master#egg=nyprsetuptools'
     ],
     tests_require=[
         'moto',

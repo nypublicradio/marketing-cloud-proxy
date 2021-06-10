@@ -23,8 +23,8 @@ jobs:
             if [[ ! -d ~/.venv ]]; then
               python -m venv ~/.venv
               . ~/.venv/bin/activate
-              pip install --upgrade pip
-              pip install -U git+https://github.com/nypublicradio/nyprsetuptools.git
+              pip install --upgrade pip setuptools
+              pip install wheel
               pip install -e .
               python setup.py test_requirements
               curl -L "$CC_REPORTER" > ~/.venv/bin/cc-test-reporter
@@ -46,41 +46,58 @@ jobs:
             - ~/marketing-cloud-proxy/.eggs
             - ~/marketing-cloud-proxy/bin
 
+  build_lambda:
+    working_directory: ~/marketing-cloud-proxy
+    docker:
+      - image: circleci/python:3.6
+    steps:
+      - checkout
+      - run:
+          name: Build Lambda
+          command: |
+            mkdir -p workspace/pkg
+            pip install . -t workspace/pkg
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - pkg
+
   deploy_lambda:
     working_directory: ~/marketing-cloud-proxy
     docker:
       - image: circleci/python:3.6
     steps:
       - checkout
+      - attach_workspace:
+          at: workspace
       - restore_cache:
           <<: *cache_key
       - run:
           name: Deploy Lambda
           command: |
-            if [[ "${CIRCLE_BRANCH}" == "main" ]]; then
+            if [[ "${CIRCLE_BRANCH}" == "main" || "${CIRCLE_TAG}" == "demo" ]]; then
+              export ENV=demo
               export TAG=demo
               export DEMO_RELEASE="$CIRCLE_SHA1"
-              env | sed -n 's/^DEMO_//p' > .env
-              export TARGET=demo
             elif echo "$CIRCLE_TAG" | grep -q "v[0-9]\+\.[0-9]\+\.[0-9]\+"; then
+              export ENV=prod
               export TAG=$CIRCLE_TAG
               export PROD_RELEASE="$TAG"
-              env | sed -n 's/^PROD_//p' > .env
-              export TARGET=production
             else
               exit 1
             fi
             if [[ ! -d ~/.venv ]]; then
               python -m venv ~/.venv
               . ~/.venv/bin/activate
-              pip install --upgrade pip
-              pip install -U git+https://github.com/nypublicradio/nyprsetuptools.git
-              pip install -e .
+              pip install --upgrade pip setuptools
+              pip install wheel
             fi
-            sudo apt-get install -y nodejs npm
-            sudo npm install -g serverless
-            npm install
-            sls deploy
+            pip install -e .
+            python setup.py deploy \
+              --environment=$ENV \
+              --function-name=marketing-cloud-proxy \
+              --function-handler=marketing_cloud_proxy.handler \
+              --package-dir=workspace/pkg
 
 workflows:
   version: 2
@@ -90,7 +107,7 @@ workflows:
           filters:
             tags:
               only: /.*/
-      - deploy_lambda:
+      - build_lambda:
           requires:
             - test
           filters:
@@ -100,6 +117,17 @@ workflows:
                 - demo
             branches:
               only: main
+      - deploy_lambda:
+          requires:
+            - build_lambda
+          filters:
+            tags:
+              only:
+                - /^v[0-9]+\.[0-9]+\.[0-9]+/
+                - demo
+            branches:
+              only: main
+
 
 experimental:
   notify:
