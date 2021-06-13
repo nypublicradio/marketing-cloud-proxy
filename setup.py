@@ -44,6 +44,7 @@ setup(
         'nyprsetuptools @ git+https://github.com/nypublicradio/nyprsetuptools@master#egg=nyprsetuptools'
     ],
     tests_require=[
+        'dotmap'
         'moto',
         'pytest',
         'pytest-cov',
