@@ -8,7 +8,8 @@ import time
 REFRESH_TOKEN_TABLE = (
     os.environ.get("REFRESH_TOKEN_TABLE") or "MarketingCloudAuthTokenStore"
 )
-client = boto3.client("dynamodb")
+#TODO: Can I use a env var here?
+boto_client = boto3.client("dynamodb", region_name="us-east-1")
 
 config = {
     'accountId': os.environ.get('MC_ACCOUNT_ID'),
@@ -27,11 +28,11 @@ config = {
 class MarketingCloudAuthManager:
     @staticmethod
     def retrieve_token_data_from_dynamo():
-        token_item = client.get_item(
+        token_item = boto_client.get_item(
             TableName=REFRESH_TOKEN_TABLE,
             Key={"KeyName": {"S": "MarketingCloudAuthToken"}},
         )
-        token_expiration_item = client.get_item(
+        token_expiration_item = boto_client.get_item(
             TableName=REFRESH_TOKEN_TABLE,
             Key={"KeyName": {"S": "MarketingCloudAuthTokenExpiration"}},
         )
@@ -66,14 +67,14 @@ class MarketingCloudAuthManager:
 
         if cls.is_token_expired(token_data):
             fuel_client = FuelSDK.ET_Client(False, False, config)
-            client.put_item(
+            boto_client.put_item(
                 TableName=REFRESH_TOKEN_TABLE,
                 Item={
                     "KeyName": {"S": "MarketingCloudAuthToken"},
                     "KeyValue": {"S": fuel_client.authToken},
                 },
             )
-            client.put_item(
+            boto_client.put_item(
                 TableName=REFRESH_TOKEN_TABLE,
                 Item={
                     "KeyName": {"S": "MarketingCloudAuthTokenExpiration"},
