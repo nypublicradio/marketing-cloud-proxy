@@ -38,12 +38,20 @@ def dynamo_table():
 class MockFuelClient:
     authToken = "12345"
     authTokenExpiration = time.time() + 600
+    post_response = DotMap({"results": [{"StatusCode": "OK"}]})
+    patch_response = DotMap({"results": [{"StatusCode": "OK"}]})
 
-    def __init__(*args):
+    def __init__(*args, **kwargs):
         pass
 
-    @staticmethod
-    def ET_DataExtension_Row(*args, **kwargs):
-        mocked_properties = DotMap({"post": lambda: True, "patch": lambda: True})
+    @classmethod
+    def ET_DataExtension_Row(cls, *args, **kwargs):
+        mocked_properties = DotMap(
+            {"post": lambda: cls.post_response, "patch": lambda: cls.patch_response}
+        )
 
         return mocked_properties
+
+
+class MockFuelClientPatchFailure(MockFuelClient):
+    patch_response = DotMap({"results": [{"StatusCode": "Error"}]})

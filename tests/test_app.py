@@ -6,11 +6,12 @@ import boto3
 import FuelSDK
 import moto
 import pytest
-from marketing_cloud_proxy import app
-
-from tests.conftest import MockFuelClient, dynamo_table
 import requests
 from dotmap import DotMap
+from marketing_cloud_proxy import app
+
+from tests.conftest import (MockFuelClient, MockFuelClientPatchFailure,
+                            dynamo_table)
 
 
 @pytest.fixture(autouse=True)
@@ -160,6 +161,7 @@ def test_unmigrated_mailchimp_list_success(monkeypatch):
         data = json.loads(res.data)
         assert {**json.loads(expected_response), "additional_detail": "proxied"} == data
 
+
 @moto.mock_dynamodb2
 def test_unmigrated_mailchimp_list_failure(monkeypatch):
     dynamo_table()
@@ -182,11 +184,28 @@ def test_unmigrated_mailchimp_list_failure(monkeypatch):
 def test_migrated_mailchimp_list(monkeypatch):
     dynamo_table()
     with app.app.test_client() as client:
-        monkeypatch.setattr(app, 'migrated_lists', ["12345abcde"])
-        monkeypatch.setattr(app, 'mailchip_id_to_marketingcloud_list', {"12345abcde": "Stations"})
+        monkeypatch.setattr(app, "migrated_lists", ["12345abcde"])
+        monkeypatch.setattr(
+            app, "mailchip_id_to_marketingcloud_list", {"12345abcde": "Stations"}
+        )
         res = client.post(
             "/marketing-cloud-proxy/subscribe",
             data={"email": "test@example.com", "list": "12345abcde"},
         )
         data = json.loads(res.data)
         assert data["status"] == "success"
+
+
+@moto.mock_dynamodb2
+def test_error_from_marketingcloud(monkeypatch):
+    dynamo_table()
+    with app.app.test_client() as client:
+        monkeypatch.setattr(FuelSDK, "ET_Client", MockFuelClientPatchFailure)
+        monkeypatch.setattr(app, "ET_Client", MockFuelClientPatchFailure)
+        res = client.post(
+            "/marketing-cloud-proxy/subscribe",
+            data={"email": "test@example.com", "list": "Stations"},
+        )
+        data = json.loads(res.data)
+        assert res.status_code == 400
+        assert data["status"] == "failure"

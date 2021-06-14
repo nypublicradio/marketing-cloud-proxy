@@ -105,6 +105,8 @@ def subscribe():
         f"{email_list} Opt out Date": "",
     }
     patch_response = de4.patch()
+    if patch_response.results[0].StatusCode == "Error":
+        return {"status": "failure", "message": "User could not be subscribed"}, 400
 
     return {"status": "success", "message": "Email successfully added"}
 
