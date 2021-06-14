@@ -22,8 +22,6 @@ def patch_et_client(monkeypatch):
 
 @moto.mock_dynamodb2
 def test_healthcheck():
-    """Tests being written in test branch, keeping a stub here for pytest to
-    process"""
     with app.app.test_client() as client:
         res = client.get("/marketing-cloud-proxy/")
         assert res.status_code == 204
@@ -31,8 +29,6 @@ def test_healthcheck():
 
 @moto.mock_dynamodb2
 def test_get_fails():
-    """Tests being written in test branch, keeping a stub here for pytest to
-    process"""
     with app.app.test_client() as client:
         res = client.get("/marketing-cloud-proxy/subscribe")
         assert res.status_code == 405
@@ -40,9 +36,6 @@ def test_get_fails():
 
 @moto.mock_dynamodb2
 def test_post_with_json():
-    """Tests being written in test branch, keeping a stub here for pytest to
-    process"""
-
     dynamo_table()
     with app.app.test_client() as client:
         res = client.post(
@@ -55,9 +48,6 @@ def test_post_with_json():
 
 @moto.mock_dynamodb2
 def test_post_with_form():
-    """Tests being written in test branch, keeping a stub here for pytest to
-    process"""
-
     dynamo_table()
     with app.app.test_client() as client:
         res = client.post(
@@ -70,9 +60,6 @@ def test_post_with_form():
 
 @moto.mock_dynamodb2
 def test_post_with_no_data():
-    """Tests being written in test branch, keeping a stub here for pytest to
-    process"""
-
     dynamo_table()
     with app.app.test_client() as client:
         res = client.post(
@@ -85,9 +72,6 @@ def test_post_with_no_data():
 
 @moto.mock_dynamodb2
 def test_post_json_with_no_email():
-    """Tests being written in test branch, keeping a stub here for pytest to
-    process"""
-
     dynamo_table()
     with app.app.test_client() as client:
         res = client.post(
@@ -100,9 +84,6 @@ def test_post_json_with_no_email():
 
 @moto.mock_dynamodb2
 def test_post_json_with_no_list():
-    """Tests being written in test branch, keeping a stub here for pytest to
-    process"""
-
     dynamo_table()
     with app.app.test_client() as client:
         res = client.post(
@@ -115,9 +96,6 @@ def test_post_json_with_no_list():
 
 @moto.mock_dynamodb2
 def test_post_form_with_no_email():
-    """Tests being written in test branch, keeping a stub here for pytest to
-    process"""
-
     dynamo_table()
     with app.app.test_client() as client:
         res = client.post(
@@ -130,9 +108,6 @@ def test_post_form_with_no_email():
 
 @moto.mock_dynamodb2
 def test_post_form_with_no_list():
-    """Tests being written in test branch, keeping a stub here for pytest to
-    process"""
-
     dynamo_table()
     with app.app.test_client() as client:
         res = client.post(
@@ -182,10 +157,6 @@ def test_unmigrated_mailchimp_list_success(monkeypatch):
             "/marketing-cloud-proxy/subscribe",
             data={"email": "test@example.com", "list": "12345abcde"},
         )
-        # Success
-        # b'{"status":"subscribed","email_address":"YWFxoC9mCv-wnyc@mikehearn.net","list_id":"65dbec786b"}'
-        # Failure
-        # b'{"detail":"test@example.com looks fake or invalid, please enter a real email address.","instance":"d5ebfbe4-a25e-2956-7e72-09574da7a6e2","status":400,"title":"Invalid Resource","type":"https://mailchimp.com/developer/marketing/docs/errors/"}'
         data = json.loads(res.data)
         assert {**json.loads(expected_response), "additional_detail": "proxied"} == data
 
