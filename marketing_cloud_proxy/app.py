@@ -1,16 +1,24 @@
 import json
 import os
-from datetime import datetime
 import re
+from datetime import datetime
 
 import FuelSDK as ET_Client
+import requests
 from flask import Flask, Response, request
+# TODO: Remove this CORS situation before we push to demo
 from flask_cors import CORS
 from werkzeug.exceptions import BadRequestKeyError
 
 from marketing_cloud_proxy.client import MarketingCloudAuthManager
-from marketing_cloud_proxy.errors import NoDataProvidedError, InvalidEmail
+from marketing_cloud_proxy.errors import InvalidEmail, NoDataProvidedError
+from marketing_cloud_proxy.lists import (
+    mailchip_id_to_marketingcloud_list,
+    migrated_lists,
+)
+from marketing_cloud_proxy.settings import MAILCHIMP_PROXY_ENDPOINT
 
+# TODO: Remove this CORS situation before we push to demo
 app = Flask(__name__)
 CORS(app)
 
@@ -41,25 +49,46 @@ def subscribe():
     try:
         if not request.form and not request.data:
             raise NoDataProvidedError
-        if request.form:
-            email_list = request.form["list"]
-            email_address = request.form["email"]
+
+        # POST submitted via api
         if request.data:
             request_dict = json.loads(request.data)
             email_list = request_dict["list"]
             email_address = request_dict["email"]
-    except (BadRequestKeyError, KeyError, NoDataProvidedError) as e:
-        return {"status": "failure", "message": "List or email was not provided"}, 400
 
-    # Invalid email failure
-    try:
-        if not is_valid_email(email_address):
-            raise InvalidEmail
-    except InvalidEmail:
+        # POST submitted via form
+        else:
+            email_list = request.form["list"]
+            email_address = request.form["email"]
+    except (BadRequestKeyError, KeyError, NoDataProvidedError) as e:
+        return {
+            "status": "failure",
+            "message": "List or email was not provided",
+        }, 400
+
+    # Fail on invalid email
+    if not is_valid_email(email_address):
         return {"status": "failure", "message": "Email address is invalid"}, 400
 
     # Check if list is a Mailchimp ID
+    # If it's a mailchimp ID, check if it's been migrated
+    # If migrated, convert to Marketing Cloud list and move on in process
+    # If not, proxy it to the Mailchimp signup form
     is_mailchimp_id = re.match(r"^[0-9a-fA-F]{10}$", email_list)
+    if is_mailchimp_id and email_list in migrated_lists:
+        email_list = mailchip_id_to_marketingcloud_list[email_list]
+    elif is_mailchimp_id and email_list not in migrated_lists:
+        res = requests.post(
+            MAILCHIMP_PROXY_ENDPOINT,
+            json={"list": email_list, "email": email_address},
+        )
+        if res.ok:
+            return {**json.loads(res.content), "additional_detail": "proxied"}
+        else:
+            return {
+                **json.loads(res.content),
+                "additional_detail": "proxied",
+            }, res.status_code
 
     # First attempt to add email to overall Master Preferences data extension
     de4.props = {

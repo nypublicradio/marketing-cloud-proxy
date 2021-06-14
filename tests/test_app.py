@@ -9,6 +9,8 @@ import pytest
 from marketing_cloud_proxy import app
 
 from tests.conftest import MockFuelClient, dynamo_table
+import requests
+from dotmap import DotMap
 
 
 @pytest.fixture(autouse=True)
@@ -153,9 +155,67 @@ def test_invalid_email():
         assert data["status"] == "failure"
 
 
-def test_migrated_mailchimp_list():
-    pass
+class ResponseMock:
+    def __init__(self, is_ok, response):
+        self.ok = is_ok
+        self.response = response
+
+    @property
+    def ok(self):
+        return self.is_ok
+
+    def post(self):
+        return self.response
 
 
-def test_unmigrated_mailchimp_list():
-    pass
+@moto.mock_dynamodb2
+def test_unmigrated_mailchimp_list_success(monkeypatch):
+    dynamo_table()
+    with app.app.test_client() as client:
+        expected_response = b'{"status":"subscribed","email_address":"YWFxoC9mCv-wnyc@mikehearn.net","list_id":"65dbec786b"}'
+        monkeypatch.setattr(
+            requests,
+            "post",
+            lambda *args, **kwargs: DotMap({"ok": True, "content": expected_response}),
+        )
+        res = client.post(
+            "/marketing-cloud-proxy/subscribe",
+            data={"email": "test@example.com", "list": "12345abcde"},
+        )
+        # Success
+        # b'{"status":"subscribed","email_address":"YWFxoC9mCv-wnyc@mikehearn.net","list_id":"65dbec786b"}'
+        # Failure
+        # b'{"detail":"test@example.com looks fake or invalid, please enter a real email address.","instance":"d5ebfbe4-a25e-2956-7e72-09574da7a6e2","status":400,"title":"Invalid Resource","type":"https://mailchimp.com/developer/marketing/docs/errors/"}'
+        data = json.loads(res.data)
+        assert {**json.loads(expected_response), "additional_detail": "proxied"} == data
+
+@moto.mock_dynamodb2
+def test_unmigrated_mailchimp_list_failure(monkeypatch):
+    dynamo_table()
+    with app.app.test_client() as client:
+        expected_response = b'{"detail":"test@example.com looks fake or invalid, please enter a real email address.","instance":"d5ebfbe4-a25e-2956-7e72-09574da7a6e2","status":400,"title":"Invalid Resource","type":"https://mailchimp.com/developer/marketing/docs/errors/"}'
+        monkeypatch.setattr(
+            requests,
+            "post",
+            lambda *args, **kwargs: DotMap({"ok": False, "content": expected_response}),
+        )
+        res = client.post(
+            "/marketing-cloud-proxy/subscribe",
+            data={"email": "test@example.com", "list": "12345abcde"},
+        )
+        data = json.loads(res.data)
+        assert {**json.loads(expected_response), "additional_detail": "proxied"} == data
+
+
+@moto.mock_dynamodb2
+def test_migrated_mailchimp_list(monkeypatch):
+    dynamo_table()
+    with app.app.test_client() as client:
+        monkeypatch.setattr(app, 'migrated_lists', ["12345abcde"])
+        monkeypatch.setattr(app, 'mailchip_id_to_marketingcloud_list', {"12345abcde": "Stations"})
+        res = client.post(
+            "/marketing-cloud-proxy/subscribe",
+            data={"email": "test@example.com", "list": "12345abcde"},
+        )
+        data = json.loads(res.data)
+        assert data["status"] == "success"
