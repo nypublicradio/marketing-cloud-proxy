@@ -2,7 +2,9 @@ import os
 import FuelSDK as ET_Client
 from flask import Flask, request, Response
 from werkzeug.exceptions import BadRequestKeyError
+
 import sentry_sdk
+from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 from marketing_cloud_proxy.client import EmailSignupRequestHandler, ListRequestHandler
@@ -12,8 +14,9 @@ from marketing_cloud_proxy.errors import InvalidDataError
 
 sentry_sdk.init(
     dsn=os.environ.get("SENTRY_DSN"),
-    integrations=[FlaskIntegration()],
+    integrations=[AwsLambdaIntegration(), FlaskIntegration()],
     environment=os.environ.get("ENV"),
+    release=os.environ.get("SENTRY_RELEASE"),
     # Set traces_sample_rate to 1.0 to capture 100%
     # of transactions for performance monitoring.
     # We recommend adjusting this value in production.
@@ -31,10 +34,7 @@ def healthcheck():
 
 @app.route(f"/{path_prefix}/sentry", methods=["GET"])
 def test_sentry():
-    if os.environ.get("ENV") == "demo":
-        division_by_zero = 1 / 0
-    else:
-        return Response(status=404)
+    division_by_zero = 1 / 0
 
 @app.route(f"/{path_prefix}/subscribe", methods=["POST"])
 def subscribe():
