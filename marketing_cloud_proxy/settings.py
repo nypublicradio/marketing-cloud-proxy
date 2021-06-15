@@ -5,6 +5,7 @@ MAILCHIMP_PROXY_ENDPOINT = (
     f"{os.environ.get('NYPR_API_ENDPOINT')}/opt-in/v1/subscribe/mailchimp"
 )
 
+AWS_DEFAULT_REGION = os.environ.get("AWS_DEFAULT_REGION")
 APP_SIGNATURE = "none"
 MC_ACCOUNT_ID = os.environ.get("MC_ACCOUNT_ID")
 MC_AUTHENTICATION_URL = os.environ.get("MC_AUTHENTICATION_URL")

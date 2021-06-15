@@ -3,7 +3,6 @@ import time
 
 import boto3
 import moto
-import pytest
 from dotmap import DotMap
 
 

@@ -1,22 +1,21 @@
-from datetime import datetime
 import json
-import re
 import os
-
-import jwt
-import boto3
+import re
 import time
+from datetime import datetime
 
+import boto3
 import FuelSDK
+import jwt
 from werkzeug.exceptions import BadRequestKeyError
-from marketing_cloud_proxy.errors import NoDataProvidedError, InvalidDataError
+
 from marketing_cloud_proxy import settings
+from marketing_cloud_proxy.errors import InvalidDataError, NoDataProvidedError
 
 REFRESH_TOKEN_TABLE = (
     os.environ.get("REFRESH_TOKEN_TABLE") or "MarketingCloudAuthTokenStore"
 )
-# TODO: Can I use a env var here?
-boto_client = boto3.client("dynamodb", region_name="us-east-1")
+boto_client = boto3.client("dynamodb", region_name=settings.AWS_DEFAULT_REGION)
 
 config = {
     "accountId": settings.MC_ACCOUNT_ID,

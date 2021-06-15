@@ -1,14 +1,10 @@
 import json
-import os
-import time
 
-import boto3
-import FuelSDK
 import moto
 import pytest
 import requests
 from dotmap import DotMap
-from marketing_cloud_proxy import app, mailchimp, client
+from marketing_cloud_proxy import app, client, mailchimp
 
 from tests.conftest import (MockFuelClient, MockFuelClientPatchFailure,
                             dynamo_table)
