@@ -32,6 +32,7 @@ setup(
         'Werkzeug==1.0.1',
         'python-dotenv',
         'serverless-wsgi',
+        'requests'
     ],
     license='BSD',
     long_description=long_description,
@@ -44,6 +45,7 @@ setup(
         'nyprsetuptools @ git+https://github.com/nypublicradio/nyprsetuptools@master#egg=nyprsetuptools'
     ],
     tests_require=[
+        'dotmap',
         'moto',
         'pytest',
         'pytest-cov',
