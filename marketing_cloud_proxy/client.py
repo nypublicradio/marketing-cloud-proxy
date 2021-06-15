@@ -103,14 +103,6 @@ class AuthenticatedMCClient:
         self.auth_client = MarketingCloudAuthClient.instantiate_client()
 
 
-class MasterPreferencesDE(AuthenticatedMCClient):
-    def __init__(self):
-        super().__init__()
-        de_row = FuelSDK.ET_DataExtension_Row()
-        de_row.CustomerKey = os.environ.get("MC_DATA_EXTENSION")
-        de_row.auth_stub = self.auth_client
-
-
 class EmailSignupRequestHandler:
     def __init__(self, request):
         self.email = self.__extract_email_from_request(request)
