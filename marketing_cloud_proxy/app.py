@@ -1,7 +1,5 @@
 import os
-import FuelSDK as ET_Client
 from flask import Flask, request, Response
-from werkzeug.exceptions import BadRequestKeyError
 
 import sentry_sdk
 from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
@@ -31,10 +29,6 @@ path_prefix = os.environ.get("APP_NAME")
 @app.route(f"/{path_prefix}/", methods=["GET"])
 def healthcheck():
     return Response(status=204)
-
-@app.route(f"/{path_prefix}/sentry", methods=["GET"])
-def test_sentry():
-    division_by_zero = 1 / 0
 
 @app.route(f"/{path_prefix}/subscribe", methods=["POST"])
 def subscribe():
