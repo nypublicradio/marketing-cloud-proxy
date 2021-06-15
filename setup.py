@@ -32,7 +32,8 @@ setup(
         'Werkzeug==1.0.1',
         'python-dotenv',
         'serverless-wsgi',
-        'requests'
+        'requests',
+        'sentry-sdk[flask]',
     ],
     license='BSD',
     long_description=long_description,
