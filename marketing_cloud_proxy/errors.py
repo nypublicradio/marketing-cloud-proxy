@@ -1,5 +1,6 @@
 class Error(Exception):
-    pass
+    def __init__(self, *args):
+        self.message = f"{args[0]}"
 
 
 class NoDataProvidedError(Error):
@@ -14,5 +15,5 @@ class FuelSDKSignUpError(Error):
     pass
 
 
-class InvalidDataError(Exception):
+class InvalidDataError(Error):
     pass

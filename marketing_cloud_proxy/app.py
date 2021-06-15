@@ -26,7 +26,7 @@ def subscribe():
     try:
         email_handler = EmailSignupRequestHandler(request)
     except InvalidDataError as e:
-        return EmailSignupRequestHandler.failure_response(e.args[0])
+        return EmailSignupRequestHandler.failure_response(e.message)
 
     if not email_handler.is_email_valid():
         return EmailSignupRequestHandler.failure_response("Email address is invalid")

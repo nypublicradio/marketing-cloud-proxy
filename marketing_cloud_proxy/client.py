@@ -7,7 +7,7 @@ import jwt
 import boto3
 import time
 
-from FuelSDK import ET_Client
+import FuelSDK as ET_Client
 from werkzeug.exceptions import BadRequestKeyError
 from marketing_cloud_proxy.errors import NoDataProvidedError, InvalidDataError
 
@@ -72,7 +72,7 @@ class MarketingCloudAuthClient:
         token_data = cls.retrieve_token_data_from_dynamo()
 
         if cls.is_token_expired(token_data):
-            fuel_client = ET_Client(False, False, config)
+            fuel_client = ET_Client.ET_Client(False, False, config)
             boto_client.put_item(
                 TableName=REFRESH_TOKEN_TABLE,
                 Item={
@@ -112,10 +112,10 @@ class MasterPreferencesDE(AuthenticatedMCClient):
 
 class EmailSignupRequestHandler:
     def __init__(self, request):
-        self.auth_client = MarketingCloudAuthClient.instantiate_client()
-        self.de_row = self.__create_data_extension_row_stub()
         self.email = self.__extract_email_from_request(request)
         self.list = self.__extract_list_from_request(request)
+        self.auth_client = MarketingCloudAuthClient.instantiate_client()
+        self.de_row = self.__create_data_extension_row_stub()
 
     def is_email_valid(self):
         return bool(re.match(r"[^@]+@[^@]+\.[^@]+", self.email))
