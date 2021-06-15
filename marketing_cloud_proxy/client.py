@@ -7,7 +7,7 @@ import jwt
 import boto3
 import time
 
-import FuelSDK as ET_Client
+import FuelSDK
 from werkzeug.exceptions import BadRequestKeyError
 from marketing_cloud_proxy.errors import NoDataProvidedError, InvalidDataError
 
@@ -72,7 +72,7 @@ class MarketingCloudAuthClient:
         token_data = cls.retrieve_token_data_from_dynamo()
 
         if cls.is_token_expired(token_data):
-            fuel_client = ET_Client.ET_Client(False, False, config)
+            fuel_client = FuelSDK.ET_Client(False, False, config)
             boto_client.put_item(
                 TableName=REFRESH_TOKEN_TABLE,
                 Item={
@@ -94,7 +94,7 @@ class MarketingCloudAuthClient:
             "none",
         )
 
-        return ET_Client(False, False, {"jwt": jwt_token, **config})
+        return FuelSDK.ET_Client(False, False, {"jwt": jwt_token, **config})
 
 
 class AuthenticatedMCClient:
@@ -105,7 +105,7 @@ class AuthenticatedMCClient:
 class MasterPreferencesDE(AuthenticatedMCClient):
     def __init__(self):
         super().__init__()
-        de_row = ET_Client.ET_DataExtension_Row()
+        de_row = FuelSDK.ET_DataExtension_Row()
         de_row.CustomerKey = os.environ.get("MC_DATA_EXTENSION")
         de_row.auth_stub = self.auth_client
 
@@ -121,7 +121,7 @@ class EmailSignupRequestHandler:
         return bool(re.match(r"[^@]+@[^@]+\.[^@]+", self.email))
 
     def __create_data_extension_row_stub(self):
-        de_row = ET_Client.ET_DataExtension_Row()
+        de_row = FuelSDK.ET_DataExtension_Row()
         de_row.CustomerKey = os.environ.get("MC_DATA_EXTENSION")
         de_row.auth_stub = self.auth_client
         return de_row
@@ -184,3 +184,34 @@ class EmailSignupRequestHandler:
             "status": "failure",
             "message": message,
         }, 400
+
+
+class ListRequestHandler:
+    def __init__(self):
+        self.auth_client = MarketingCloudAuthClient.instantiate_client()
+        self.de_column = self.__create_data_extension_column_stub()
+
+    def __create_data_extension_column_stub(self):
+        de_row = FuelSDK.ET_DataExtension_Row()
+        de_row.CustomerKey = os.environ.get("MC_DATA_EXTENSION")
+        de_row.auth_stub = self.auth_client
+        return de_row
+
+    def lists_json(self):
+        self.de_column.props = ["Name"]
+        self.de_column.search_filter = {
+            "Property": "CustomerKey",
+            "SimpleOperator": "like",
+            "Value": os.environ.get("MC_DATA_EXTENSION"),
+        }
+        get_response = self.de_column.get()
+
+        # Reduces response to just fields that contain the phrase "Opt In" (i.e.
+        # Radiolab Newsletter Opt In Date) - this will remove non-list fields - then
+        # we split on the phrase "Opt In" so it returns *only* the list names
+        lists = [
+            str(x.Name).split("Opt In")[0]
+            for x in get_response.results
+            if "Opt In" in x.Name
+        ]
+        return {"lists": lists}

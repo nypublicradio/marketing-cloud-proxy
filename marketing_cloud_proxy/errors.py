@@ -1,6 +1,7 @@
 class Error(Exception):
     def __init__(self, *args):
-        self.message = f"{args[0]}"
+        if args:
+            self.message = f"{args[0]}"
 
 
 class NoDataProvidedError(Error):

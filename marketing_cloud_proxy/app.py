@@ -2,7 +2,7 @@ import os
 
 from flask import Flask, Response, request
 
-from marketing_cloud_proxy.client import EmailSignupRequestHandler
+from marketing_cloud_proxy.client import EmailSignupRequestHandler, ListRequestHandler
 from marketing_cloud_proxy.mailchimp import MailchimpForwarder
 from marketing_cloud_proxy.errors import InvalidDataError
 
@@ -36,26 +36,8 @@ def subscribe():
     return email_handler.subscribe()
 
 
-# @app.route(f"/{path_prefix}/lists")
-# def lists():
-#     stubObj = get_client()
+@app.route(f"/{path_prefix}/lists")
+def lists():
 
-#     myDEColumn = ET_Client.ET_DataExtension_Column()
-#     myDEColumn.auth_stub = stubObj
-#     myDEColumn.props = ["Name"]
-#     myDEColumn.search_filter = {
-#         "Property": "CustomerKey",
-#         "SimpleOperator": "like",
-#         "Value": os.environ.get("MC_DATA_EXTENSION"),
-#     }
-#     getResponse = myDEColumn.get()
-
-#     # Reduces response to just fields that contain the phrase "Opt In" (i.e.
-#     # Radiolab Newsletter Opt In Date) - this will remove non-list fields - then
-#     # we split on the phrase "Opt In" so it returns *only* the list names
-#     lists = [
-#         str(x.Name).split("Opt In")[0]
-#         for x in getResponse.results
-#         if "Opt In" in x.Name
-#     ]
-#     return {"lists": lists}
+    lqh = ListRequestHandler()
+    return lqh.lists_json()

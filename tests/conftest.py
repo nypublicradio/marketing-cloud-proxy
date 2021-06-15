@@ -52,6 +52,12 @@ class MockFuelClient:
 
         return mocked_properties
 
+    @classmethod
+    def ET_Client(cls, *args, **kwargs):
+        return DotMap(
+            {"authToken": cls.authToken, "authTokenExpiration": cls.authTokenExpiration}
+        )
+
 
 class MockFuelClientPatchFailure(MockFuelClient):
     patch_response = DotMap({"results": [{"StatusCode": "Error"}]})

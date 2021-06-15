@@ -17,8 +17,7 @@ from tests.conftest import (MockFuelClient, MockFuelClientPatchFailure,
 @pytest.fixture(autouse=True)
 def patch_et_client(monkeypatch):
     dynamo_table()
-    monkeypatch.setattr(FuelSDK, "ET_Client", MockFuelClient)
-    monkeypatch.setattr(client, "ET_Client", MockFuelClient)
+    monkeypatch.setattr(client, "FuelSDK", MockFuelClient)
 
 
 @moto.mock_dynamodb2
@@ -202,8 +201,7 @@ def test_migrated_mailchimp_list(monkeypatch, mocker):
 def test_error_from_marketingcloud(monkeypatch):
     dynamo_table()
     with app.app.test_client() as test_client:
-        monkeypatch.setattr(FuelSDK, "ET_Client", MockFuelClientPatchFailure)
-        monkeypatch.setattr(client, "ET_Client", MockFuelClientPatchFailure)
+        monkeypatch.setattr(client, "FuelSDK", MockFuelClientPatchFailure)
         res = test_client.post(
             "/marketing-cloud-proxy/subscribe",
             data={"email": "test@example.com", "list": "Stations"},
