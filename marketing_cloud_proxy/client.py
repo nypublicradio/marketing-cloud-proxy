@@ -10,6 +10,7 @@ import time
 import FuelSDK
 from werkzeug.exceptions import BadRequestKeyError
 from marketing_cloud_proxy.errors import NoDataProvidedError, InvalidDataError
+from marketing_cloud_proxy import settings
 
 REFRESH_TOKEN_TABLE = (
     os.environ.get("REFRESH_TOKEN_TABLE") or "MarketingCloudAuthTokenStore"
@@ -18,16 +19,16 @@ REFRESH_TOKEN_TABLE = (
 boto_client = boto3.client("dynamodb", region_name="us-east-1")
 
 config = {
-    "accountId": os.environ.get("MC_ACCOUNT_ID"),
-    "appsignature": "none",
-    "authenticationurl": os.environ.get("MC_AUTHENTICATION_URL"),
-    "baseapiurl": os.environ.get("MC_BASE_API_URL"),
-    "clientid": os.environ.get("MC_CLIENT_ID"),
-    "clientsecret": os.environ.get("MC_CLIENT_SECRET"),
-    "defaultwsdl": os.environ.get("MC_DEFAULT_WSDL"),
-    "soapendpoint": os.environ.get("MC_SOAP_ENDPOINT"),
-    "useOAuth2Authentication": "True",
-    "wsdl_file_local_loc": os.environ.get("MC_WSDL_FILE_LOCAL_LOCATION"),
+    "accountId": settings.MC_ACCOUNT_ID,
+    "appsignature": settings.APP_SIGNATURE,
+    "authenticationurl": settings.MC_AUTHENTICATION_URL,
+    "baseapiurl": settings.MC_BASE_API_URL,
+    "clientid": settings.MC_CLIENT_ID,
+    "clientsecret": settings.MC_CLIENT_SECRET,
+    "defaultwsdl": settings.MC_DEFAULT_WSDL,
+    "soapendpoint": settings.MC_SOAP_ENDPOINT,
+    "useOAuth2Authentication": settings.USE_OAUTH2,
+    "wsdl_file_local_loc": settings.MC_WSDL_FILE_LOCAL_LOCATION
 }
 
 
