@@ -98,11 +98,6 @@ class MarketingCloudAuthClient:
         return FuelSDK.ET_Client(False, False, {"jwt": jwt_token, **config})
 
 
-class AuthenticatedMCClient:
-    def __init__(self):
-        self.auth_client = MarketingCloudAuthClient.instantiate_client()
-
-
 class EmailSignupRequestHandler:
     def __init__(self, request):
         self.email = self.__extract_email_from_request(request)
