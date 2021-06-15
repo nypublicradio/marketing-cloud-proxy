@@ -32,9 +32,7 @@ setup(
         'Werkzeug==1.0.1',
         'python-dotenv',
         'serverless-wsgi',
-        'requests',
-        # TODO: Remove
-        'flask-cors'
+        'requests'
     ],
     license='BSD',
     long_description=long_description,

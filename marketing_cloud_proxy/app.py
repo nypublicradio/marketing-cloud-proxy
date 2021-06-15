@@ -2,16 +2,11 @@ import os
 
 from flask import Flask, Response, request
 
-# TODO: Remove this CORS situation before we push to demo
-from flask_cors import CORS
-
 from marketing_cloud_proxy.client import EmailSignupRequestHandler
 from marketing_cloud_proxy.mailchimp import MailchimpForwarder
 from marketing_cloud_proxy.errors import InvalidDataError
 
-# TODO: Remove this CORS situation before we push to demo
 app = Flask(__name__)
-CORS(app)
 
 path_prefix = os.environ.get("APP_NAME")
 
