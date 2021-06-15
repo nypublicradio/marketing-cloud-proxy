@@ -33,6 +33,7 @@ setup(
         'python-dotenv',
         'serverless-wsgi',
         'requests'
+        'sentry-sdk',
     ],
     license='BSD',
     long_description=long_description,
