@@ -1,34 +1,19 @@
-import json
 import os
-import re
-from datetime import datetime
 
-import FuelSDK as ET_Client
-import requests
 from flask import Flask, Response, request
 
 # TODO: Remove this CORS situation before we push to demo
 from flask_cors import CORS
-from werkzeug.exceptions import BadRequestKeyError
 
-from marketing_cloud_proxy.client import MarketingCloudAuthManager
+from marketing_cloud_proxy.client import EmailSignupRequestHandler
 from marketing_cloud_proxy.mailchimp import MailchimpForwarder
-from marketing_cloud_proxy.errors import InvalidEmail, NoDataProvidedError
-from marketing_cloud_proxy.settings import MAILCHIMP_PROXY_ENDPOINT
+from marketing_cloud_proxy.errors import InvalidDataError
 
 # TODO: Remove this CORS situation before we push to demo
 app = Flask(__name__)
 CORS(app)
 
 path_prefix = os.environ.get("APP_NAME")
-
-
-def get_client():
-    return MarketingCloudAuthManager.instantiate_client()
-
-
-def is_valid_email(email):
-    return bool(re.match(r"[^@]+@[^@]+\.[^@]+", email))
 
 
 @app.route(f"/{path_prefix}/", methods=["GET"])
@@ -38,84 +23,44 @@ def healthcheck():
 
 @app.route(f"/{path_prefix}/subscribe", methods=["POST"])
 def subscribe():
-    stubObj = get_client()
-
-    de4 = ET_Client.ET_DataExtension_Row()
-    de4.CustomerKey = os.environ.get("MC_DATA_EXTENSION")
-    de4.auth_stub = stubObj
-
     try:
-        if not request.form and not request.data:
-            raise NoDataProvidedError
+        email_handler = EmailSignupRequestHandler(request)
+    except InvalidDataError as e:
+        return EmailSignupRequestHandler.failure_response(e.args[0])
 
-        # POST submitted via api
-        if request.data:
-            request_dict = json.loads(request.data)
-            email_list = request_dict["list"]
-            email_address = request_dict["email"]
+    if not email_handler.is_email_valid():
+        return EmailSignupRequestHandler.failure_response("Email address is invalid")
 
-        # POST submitted via form
-        else:
-            email_list = request.form["list"]
-            email_address = request.form["email"]
-    except (BadRequestKeyError, KeyError, NoDataProvidedError) as e:
-        return {
-            "status": "failure",
-            "message": "List or email was not provided",
-        }, 400
-
-    # Fail on invalid email
-    if not is_valid_email(email_address):
-        return {"status": "failure", "message": "Email address is invalid"}, 400
-
-    mf = MailchimpForwarder(email_address, email_list)
+    mf = MailchimpForwarder(email_handler.email, email_handler.list)
     if mf.is_mailchimp_address:
         if mf.is_list_migrated:
-            email_list = mf.to_marketing_cloud_list()
+            email_handler.list = mf.to_marketing_cloud_list()
         else:
             return mf.proxy_to_mailchimp()
 
-    # First attempt to add email to overall Master Preferences data extension
-    de4.props = {
-        "email_address": email_address,
-        "creation_date": datetime.now().strftime("%-m/%-d/%Y %H:%M:%S %p"),
-    }
-    post_response = de4.post()
-
-    # Then flip the list columns to indicate they have signed up
-    de4.props = {
-        "email_address": email_address,
-        email_list: "true",
-        f"{email_list} Opt In Date": datetime.now().strftime("%-m/%-d/%Y %H:%M:%S %p"),
-        f"{email_list} Opt out Date": "",
-    }
-    patch_response = de4.patch()
-    if patch_response.results[0].StatusCode == "Error":
-        return {"status": "failure", "message": "User could not be subscribed"}, 400
-
-    return {"status": "success", "message": "Email successfully added"}
+    return email_handler.subscribe()
 
 
-@app.route(f"/{path_prefix}/lists")
-def lists():
-    stubObj = get_client()
+# @app.route(f"/{path_prefix}/lists")
+# def lists():
+#     stubObj = get_client()
 
-    myDEColumn = ET_Client.ET_DataExtension_Column()
-    myDEColumn.auth_stub = stubObj
-    myDEColumn.props = ["Name"]
-    myDEColumn.search_filter = {
-        "Property": "CustomerKey",
-        "SimpleOperator": "like",
-        "Value": os.environ.get("MC_DATA_EXTENSION"),
-    }
-    getResponse = myDEColumn.get()
+#     myDEColumn = ET_Client.ET_DataExtension_Column()
+#     myDEColumn.auth_stub = stubObj
+#     myDEColumn.props = ["Name"]
+#     myDEColumn.search_filter = {
+#         "Property": "CustomerKey",
+#         "SimpleOperator": "like",
+#         "Value": os.environ.get("MC_DATA_EXTENSION"),
+#     }
+#     getResponse = myDEColumn.get()
 
-    # Reduces response to just fields that contain the phrase "Opt In" (i.e.
-    # Radiolab Newsletter Opt In Date) - this will remove non-list fields - then
-    # we split on the phrase "Opt In" so it returns *only* the list names
-    lists = [
-        str(x.Name).split("Opt In")[0]
-        for x in getResponse.results
-        if "Opt In" in x.Name
-    ]
-    return {"lists": lists}
+#     # Reduces response to just fields that contain the phrase "Opt In" (i.e.
+#     # Radiolab Newsletter Opt In Date) - this will remove non-list fields - then
+#     # we split on the phrase "Opt In" so it returns *only* the list names
+#     lists = [
+#         str(x.Name).split("Opt In")[0]
+#         for x in getResponse.results
+#         if "Opt In" in x.Name
+#     ]
+#     return {"lists": lists}

@@ -8,7 +8,7 @@ import moto
 import pytest
 import requests
 from dotmap import DotMap
-from marketing_cloud_proxy import app, mailchimp
+from marketing_cloud_proxy import app, mailchimp, client
 
 from tests.conftest import (MockFuelClient, MockFuelClientPatchFailure,
                             dynamo_table)
@@ -18,7 +18,7 @@ from tests.conftest import (MockFuelClient, MockFuelClientPatchFailure,
 def patch_et_client(monkeypatch):
     dynamo_table()
     monkeypatch.setattr(FuelSDK, "ET_Client", MockFuelClient)
-    monkeypatch.setattr(app, "ET_Client", MockFuelClient)
+    monkeypatch.setattr(client, "ET_Client", MockFuelClient)
 
 
 @moto.mock_dynamodb2
@@ -181,28 +181,30 @@ def test_unmigrated_mailchimp_list_failure(monkeypatch):
 
 
 @moto.mock_dynamodb2
-def test_migrated_mailchimp_list(monkeypatch):
+def test_migrated_mailchimp_list(monkeypatch, mocker):
     dynamo_table()
-    with app.app.test_client() as client:
+    with app.app.test_client() as test_client:
         monkeypatch.setattr(mailchimp, "migrated_lists", ["12345abcde"])
         monkeypatch.setattr(
             mailchimp, "mailchip_id_to_marketingcloud_list", {"12345abcde": "Stations"}
         )
-        res = client.post(
+        spy = mocker.spy(client.EmailSignupRequestHandler, 'subscribe')
+        res = test_client.post(
             "/marketing-cloud-proxy/subscribe",
             data={"email": "test@example.com", "list": "12345abcde"},
         )
         data = json.loads(res.data)
+        assert spy.call_args[0][0].list == 'Stations'
         assert data["status"] == "success"
 
 
 @moto.mock_dynamodb2
 def test_error_from_marketingcloud(monkeypatch):
     dynamo_table()
-    with app.app.test_client() as client:
+    with app.app.test_client() as test_client:
         monkeypatch.setattr(FuelSDK, "ET_Client", MockFuelClientPatchFailure)
-        monkeypatch.setattr(app, "ET_Client", MockFuelClientPatchFailure)
-        res = client.post(
+        monkeypatch.setattr(client, "ET_Client", MockFuelClientPatchFailure)
+        res = test_client.post(
             "/marketing-cloud-proxy/subscribe",
             data={"email": "test@example.com", "list": "Stations"},
         )

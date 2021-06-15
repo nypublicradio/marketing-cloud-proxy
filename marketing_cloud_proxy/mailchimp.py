@@ -48,6 +48,7 @@ class MailchimpForwarder:
     endpoint. This only will forward an email address in the event that the list
     id has not been migrated to Marketing Cloud, which is tracked in the
     `migrated_lists` list and verified in the `is_list_migrated` method."""
+
     def __init__(self, email_address, email_list):
         self.email_address = email_address
         self.email_list = email_list
@@ -67,11 +68,10 @@ class MailchimpForwarder:
         )
         if res.ok:
             return {**json.loads(res.content), "additional_detail": "proxied"}
-        else:
-            return {
-                **json.loads(res.content),
-                "additional_detail": "proxied",
-            }, res.status_code
+        return {
+            **json.loads(res.content),
+            "additional_detail": "proxied",
+        }, res.status_code
 
     def to_marketing_cloud_list(self):
         return mailchip_id_to_marketingcloud_list[self.email_list]
