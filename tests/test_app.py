@@ -8,7 +8,7 @@ import moto
 import pytest
 import requests
 from dotmap import DotMap
-from marketing_cloud_proxy import app
+from marketing_cloud_proxy import app, mailchimp
 
 from tests.conftest import (MockFuelClient, MockFuelClientPatchFailure,
                             dynamo_table)
@@ -148,7 +148,7 @@ class ResponseMock:
 def test_unmigrated_mailchimp_list_success(monkeypatch):
     dynamo_table()
     with app.app.test_client() as client:
-        expected_response = b'{"status":"subscribed","email_address":"YWFxoC9mCv-wnyc@mikehearn.net","list_id":"65dbec786b"}'
+        expected_response = b'{"status":"success","email_address":"YWFxoC9mCv-wnyc@mikehearn.net","list_id":"65dbec786b"}'
         monkeypatch.setattr(
             requests,
             "post",
@@ -156,7 +156,7 @@ def test_unmigrated_mailchimp_list_success(monkeypatch):
         )
         res = client.post(
             "/marketing-cloud-proxy/subscribe",
-            data={"email": "test@example.com", "list": "12345abcde"},
+            data={"email": "test@example.com", "list": "65dbec786b"},
         )
         data = json.loads(res.data)
         assert {**json.loads(expected_response), "additional_detail": "proxied"} == data
@@ -184,9 +184,9 @@ def test_unmigrated_mailchimp_list_failure(monkeypatch):
 def test_migrated_mailchimp_list(monkeypatch):
     dynamo_table()
     with app.app.test_client() as client:
-        monkeypatch.setattr(app, "migrated_lists", ["12345abcde"])
+        monkeypatch.setattr(mailchimp, "migrated_lists", ["12345abcde"])
         monkeypatch.setattr(
-            app, "mailchip_id_to_marketingcloud_list", {"12345abcde": "Stations"}
+            mailchimp, "mailchip_id_to_marketingcloud_list", {"12345abcde": "Stations"}
         )
         res = client.post(
             "/marketing-cloud-proxy/subscribe",

@@ -6,16 +6,14 @@ from datetime import datetime
 import FuelSDK as ET_Client
 import requests
 from flask import Flask, Response, request
+
 # TODO: Remove this CORS situation before we push to demo
 from flask_cors import CORS
 from werkzeug.exceptions import BadRequestKeyError
 
 from marketing_cloud_proxy.client import MarketingCloudAuthManager
+from marketing_cloud_proxy.mailchimp import MailchimpForwarder
 from marketing_cloud_proxy.errors import InvalidEmail, NoDataProvidedError
-from marketing_cloud_proxy.lists import (
-    mailchip_id_to_marketingcloud_list,
-    migrated_lists,
-)
 from marketing_cloud_proxy.settings import MAILCHIMP_PROXY_ENDPOINT
 
 # TODO: Remove this CORS situation before we push to demo
@@ -70,25 +68,12 @@ def subscribe():
     if not is_valid_email(email_address):
         return {"status": "failure", "message": "Email address is invalid"}, 400
 
-    # Check if list is a Mailchimp ID
-    # If it's a mailchimp ID, check if it's been migrated
-    # If migrated, convert to Marketing Cloud list and move on in process
-    # If not, proxy it to the Mailchimp signup form
-    is_mailchimp_id = re.match(r"^[0-9a-fA-F]{10}$", email_list)
-    if is_mailchimp_id and email_list in migrated_lists:
-        email_list = mailchip_id_to_marketingcloud_list[email_list]
-    elif is_mailchimp_id and email_list not in migrated_lists:
-        res = requests.post(
-            MAILCHIMP_PROXY_ENDPOINT,
-            json={"list": email_list, "email": email_address},
-        )
-        if res.ok:
-            return {**json.loads(res.content), "additional_detail": "proxied"}
+    mf = MailchimpForwarder(email_address, email_list)
+    if mf.is_mailchimp_address:
+        if mf.is_list_migrated:
+            email_list = mf.to_marketing_cloud_list()
         else:
-            return {
-                **json.loads(res.content),
-                "additional_detail": "proxied",
-            }, res.status_code
+            return mf.proxy_to_mailchimp()
 
     # First attempt to add email to overall Master Preferences data extension
     de4.props = {
