@@ -189,22 +189,22 @@ class EmailSignupRequestHandler:
 class ListRequestHandler:
     def __init__(self):
         self.auth_client = MarketingCloudAuthClient.instantiate_client()
-        self.de_column = self.__create_data_extension_column_stub()
+        self.de_column_object = self.__create_data_extension_column_stub()
 
     def __create_data_extension_column_stub(self):
-        de_row = FuelSDK.ET_DataExtension_Row()
-        de_row.CustomerKey = os.environ.get("MC_DATA_EXTENSION")
-        de_row.auth_stub = self.auth_client
-        return de_row
+        de_column = FuelSDK.ET_DataExtension_Column()
+        de_column.CustomerKey = os.environ.get("MC_DATA_EXTENSION")
+        de_column.auth_stub = self.auth_client
+        return de_column
 
     def lists_json(self):
-        self.de_column.props = ["Name"]
-        self.de_column.search_filter = {
+        self.de_column_object.props = ["Name"]
+        self.de_column_object.search_filter = {
             "Property": "CustomerKey",
             "SimpleOperator": "like",
             "Value": os.environ.get("MC_DATA_EXTENSION"),
         }
-        get_response = self.de_column.get()
+        get_response = self.de_column_object.get()
 
         # Reduces response to just fields that contain the phrase "Opt In" (i.e.
         # Radiolab Newsletter Opt In Date) - this will remove non-list fields - then
