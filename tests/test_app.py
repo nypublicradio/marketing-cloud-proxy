@@ -39,7 +39,7 @@ def test_post_with_json():
             json={"email": "test-001@example.com", "list": "Stations"},
         )
         data = json.loads(res.data)
-        assert data["status"] == "success"
+        assert data["status"] == "subscribed"
 
 
 @moto.mock_dynamodb2
@@ -51,7 +51,7 @@ def test_post_with_form():
             data={"email": "test-001@example.com", "list": "Stations"},
         )
         data = json.loads(res.data)
-        assert data["status"] == "success"
+        assert data["status"] == "subscribed"
 
 
 @moto.mock_dynamodb2
@@ -143,7 +143,7 @@ class ResponseMock:
 def test_unmigrated_mailchimp_list_success(monkeypatch):
     dynamo_table()
     with app.app.test_client() as client:
-        expected_response = b'{"status":"success","email_address":"YWFxoC9mCv-wnyc@mikehearn.net","list_id":"65dbec786b"}'
+        expected_response = b'{"status":"subscribed","email_address":"YWFxoC9mCv-wnyc@mikehearn.net","list_id":"65dbec786b"}'
         monkeypatch.setattr(
             requests,
             "post",
@@ -190,7 +190,7 @@ def test_migrated_mailchimp_list(monkeypatch, mocker):
         )
         data = json.loads(res.data)
         assert spy.call_args[0][0].list == 'Stations'
-        assert data["status"] == "success"
+        assert data["status"] == "subscribed"
 
 
 @moto.mock_dynamodb2
