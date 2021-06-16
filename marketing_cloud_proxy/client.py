@@ -7,6 +7,7 @@ from datetime import datetime
 import boto3
 import FuelSDK
 import jwt
+import pytz
 from werkzeug.exceptions import BadRequestKeyError
 
 from marketing_cloud_proxy import settings
@@ -146,7 +147,7 @@ class EmailSignupRequestHandler:
         # First attempt to add email to overall Master Preferences data extension
         self.de_row.props = {
             "email_address": self.email,
-            "creation_date": datetime.now().strftime("%-m/%-d/%Y %H:%M:%S %p"),
+            "creation_date": datetime.now(pytz.timezone("America/New_York")).strftime("%-m/%-d/%Y %H:%M:%S %p"),
         }
         self.de_row.post()
 
@@ -154,7 +155,7 @@ class EmailSignupRequestHandler:
         self.de_row.props = {
             "email_address": self.email,
             self.list: "true",
-            f"{self.email} Opt In Date": datetime.now().strftime(
+            f"{self.email} Opt In Date": datetime.now(pytz.timezone("America/New_York")).strftime(
                 "%-m/%-d/%Y %H:%M:%S %p"
             ),
             f"{self.email} Opt out Date": "",
