@@ -155,7 +155,7 @@ class EmailSignupRequestHandler:
         self.de_row.props = {
             "email_address": self.email,
             self.list: "true",
-            f"{self.email} Opt In Date": datetime.now(pytz.timezone("America/New_York")).strftime(
+            f"{self.list} Opt In Date": datetime.now(pytz.timezone("America/New_York")).strftime(
                 "%-m/%-d/%Y %H:%M:%S %p"
             ),
             f"{self.email} Opt out Date": "",
