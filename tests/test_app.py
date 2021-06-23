@@ -151,7 +151,7 @@ def test_unmigrated_mailchimp_list_success(monkeypatch):
         )
         res = client.post(
             "/marketing-cloud-proxy/subscribe",
-            data={"email": "test@example.com", "list": "8c376c6dff"},
+            data={"email": "test@example.com", "list": "1234567890"},
         )
         data = json.loads(res.data)
         assert {**json.loads(expected_response), "additional_detail": "proxied"} == data

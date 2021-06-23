@@ -39,6 +39,7 @@ mailchip_id_to_marketingcloud_list = {
     "e38e85dd0a": "WQXR Sustainers 2021",
     "0473b3d0b8": "This Week On WNYC",
     "04ba4787d5": "Radio Rookies",
+    "0123456789": "Non-existent List",
 }
 
 
