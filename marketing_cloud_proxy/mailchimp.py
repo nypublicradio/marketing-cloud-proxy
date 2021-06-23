@@ -5,7 +5,7 @@ import requests
 
 from marketing_cloud_proxy.settings import MAILCHIMP_PROXY_ENDPOINT
 
-migrated_lists = ['65dbec786b', 'edd6b58c0d', '8c376c6dff', '178fa0b138']
+migrated_lists = ['65dbec786b', 'edd6b58c0d', '8c376c6dff', '178fa0b138', '4b20cc9d05']
 
 mailchip_id_to_marketingcloud_list = {
     "8c376c6dff": "We the Commuters",
