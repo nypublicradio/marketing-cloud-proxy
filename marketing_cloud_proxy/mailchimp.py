@@ -5,7 +5,7 @@ import requests
 
 from marketing_cloud_proxy.settings import MAILCHIMP_PROXY_ENDPOINT
 
-migrated_lists = ['65dbec786b']
+migrated_lists = ['65dbec786b', 'edd6b58c0d', '8c376c6dff', '178fa0b138']
 
 mailchip_id_to_marketingcloud_list = {
     "8c376c6dff": "We the Commuters",
@@ -16,7 +16,6 @@ mailchip_id_to_marketingcloud_list = {
     "2fe8150dd6": "Radiolab Newsletter",
     "178fa0b138": "On The Media",
     "0e08e3bf02": "Radiolab Membership",
-    "9b240cadb2": "Gothamist",
     "7730d9adc4": "Open Ears Project",
     "566f296761": "Death Sex and Money",
     "0ea8a9e52a": "Operavore",
@@ -26,7 +25,7 @@ mailchip_id_to_marketingcloud_list = {
     "fa9d482354": "New Sounds",
     "7faa833e53": "WNYC Sustainers 2021",
     "78a66ba4f6": "WQXR Membership",
-    "65dbec786b": "WNYC and Gothamist",
+    "65dbec786b": "Gothamist",
     "058457038f": "Politics Brief Newsletter",
     "ba3160706a": "WQXR Daily Playlist",
     "eb961e9695": "American Standards and Songbook",

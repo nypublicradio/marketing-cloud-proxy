@@ -162,15 +162,15 @@ class EmailSignupRequestHandler:
         }
         patch_response = self.de_row.patch()
         if patch_response.results[0].StatusCode == "Error":
-            return {"status": "failure", "message": "User could not be subscribed"}, 400
+            return {"status": "failure", "detail": "User could not be subscribed"}, 400
 
-        return {"status": "subscribed", "message": "Email successfully added"}
+        return {"status": "subscribed", "detail": "Email successfully added"}
 
     @staticmethod
     def failure_response(message):
         return {
             "status": "failure",
-            "message": message,
+            "detail": message,
         }, 400
 
 
