@@ -67,7 +67,10 @@ class MailchimpForwarder:
             json={"list": self.email_list, "email": self.email_address},
         )
         if res.ok:
-            return {**json.loads(res.content), "additional_detail": "proxied"}
+            return {
+                **json.loads(res.content),
+                "additional_detail": "proxied",
+                "detail": "Email successfully added"}
         return {
             **json.loads(res.content),
             "additional_detail": "proxied",
