@@ -143,7 +143,7 @@ class ResponseMock:
 def test_unmigrated_mailchimp_list_success(monkeypatch):
     dynamo_table()
     with app.app.test_client() as client:
-        expected_response = b'{"status":"subscribed","email_address":"YWFxoC9mCv-wnyc@mikehearn.net","list_id":"65dbec786b"}'
+        expected_response = b'{"status":"subscribed","email_address":"YWFxoC9mCv-wnyc@mikehearn.net","list_id":"65dbec786b", "detail": "Email successfully added"}'
         monkeypatch.setattr(
             requests,
             "post",
