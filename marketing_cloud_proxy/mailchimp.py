@@ -5,7 +5,17 @@ import requests
 
 from marketing_cloud_proxy.settings import MAILCHIMP_PROXY_ENDPOINT
 
-migrated_lists = ['65dbec786b', 'edd6b58c0d', '8c376c6dff', '178fa0b138', '4b20cc9d05']
+migrated_lists = [
+    "65dbec786b",
+    "edd6b58c0d",
+    "8c376c6dff",
+    "178fa0b138",
+    "4b20cc9d05",
+    "ba3160706a",
+    "b463fe1dbc",
+    "78a66ba4f6",
+    "afb6c01328",
+]
 
 mailchip_id_to_marketingcloud_list = {
     "8c376c6dff": "We the Commuters",
@@ -39,6 +49,7 @@ mailchip_id_to_marketingcloud_list = {
     "e38e85dd0a": "WQXR Sustainers 2021",
     "0473b3d0b8": "This Week On WNYC",
     "04ba4787d5": "Radio Rookies",
+    "afb6c01328": "Gothamist Membership",
     "0123456789": "Non-existent List",
 }
 
