@@ -15,6 +15,10 @@ migrated_lists = [
     "b463fe1dbc",
     "78a66ba4f6",
     "afb6c01328",
+    "058457038f",
+    "566f296761",
+    "7d6cb8fe13",
+    "aa1c2a6097"
 ]
 
 mailchip_id_to_marketingcloud_list = {
