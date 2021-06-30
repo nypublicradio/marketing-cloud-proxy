@@ -179,9 +179,8 @@ def test_unmigrated_mailchimp_list_failure(monkeypatch):
 def test_migrated_mailchimp_list(monkeypatch, mocker):
     dynamo_table()
     with app.app.test_client() as test_client:
-        monkeypatch.setattr(mailchimp, "migrated_lists", ["12345abcde"])
         monkeypatch.setattr(
-            mailchimp, "mailchip_id_to_marketingcloud_list", {"12345abcde": "Stations"}
+            mailchimp, "mailchimp_id_to_marketingcloud_list", {"12345abcde": "Stations"}
         )
         spy = mocker.spy(client.EmailSignupRequestHandler, 'subscribe')
         res = test_client.post(

@@ -198,7 +198,7 @@ class ListRequestHandler:
         # Radiolab Newsletter Opt In Date) - this will remove non-list fields - then
         # we split on the phrase "Opt In" so it returns *only* the list names
         lists = [
-            str(x.Name).split("Opt In")[0]
+            str(x.Name).split("Opt In")[0].strip()
             for x in get_response.results
             if "Opt In" in x.Name
         ]

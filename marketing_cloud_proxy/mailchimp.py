@@ -5,23 +5,7 @@ import requests
 
 from marketing_cloud_proxy.settings import MAILCHIMP_PROXY_ENDPOINT
 
-migrated_lists = [
-    "65dbec786b",
-    "edd6b58c0d",
-    "8c376c6dff",
-    "178fa0b138",
-    "4b20cc9d05",
-    "ba3160706a",
-    "b463fe1dbc",
-    "78a66ba4f6",
-    "afb6c01328",
-    "058457038f",
-    "566f296761",
-    "7d6cb8fe13",
-    "aa1c2a6097"
-]
-
-mailchip_id_to_marketingcloud_list = {
+mailchimp_id_to_marketingcloud_list = {
     "8c376c6dff": "We the Commuters",
     "b463fe1dbc": "WNYC Membership",
     "3b5ed831b1": "Werk It",
@@ -46,7 +30,7 @@ mailchip_id_to_marketingcloud_list = {
     "d58ab29b8a": "La Brega Spanish",
     "4b20cc9d05": "Stations",
     "04e4233ec0": "WNYC Producers Circle",
-    "c2c9a536bb": "The Green Space",
+    "c2c9a536bb": "The Greene Space",
     "fedeff63ea": "La Brega English",
     "0b754ca387": "Sponsorship Client Contacts",
     "7d6cb8fe13": "NYPR History Notes",
@@ -74,7 +58,7 @@ class MailchimpForwarder:
 
     @property
     def is_list_migrated(self):
-        return self.email_list in migrated_lists
+        return mailchimp_id_to_marketingcloud_list.get(self.email_list)
 
     def proxy_to_mailchimp(self):
         res = requests.post(
@@ -92,4 +76,4 @@ class MailchimpForwarder:
         }, res.status_code
 
     def to_marketing_cloud_list(self):
-        return mailchip_id_to_marketingcloud_list[self.email_list]
+        return mailchimp_id_to_marketingcloud_list[self.email_list]
