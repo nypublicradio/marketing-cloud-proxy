@@ -26,7 +26,7 @@ setup(
     },
     install_requires=[
         'PyJWT==1.7.1',
-        'Salesforce-FuelSDK',
+        'Salesforce-FuelSDK @ git+https://github.com/nypublicradio/FuelSDK-Python.git',
         'Werkzeug==1.0.1',
         'boto3',
         'flask==1.1.4',
@@ -35,6 +35,7 @@ setup(
         'requests',
         'sentry-sdk[flask]',
         'serverless-wsgi',
+        'setuptools==57.5.0'
     ],
     license='BSD',
     long_description=long_description,
