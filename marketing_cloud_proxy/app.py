@@ -5,7 +5,11 @@ import sentry_sdk
 from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
 from sentry_sdk.integrations.flask import FlaskIntegration
 
-from marketing_cloud_proxy.client import EmailSignupRequestHandler, ListRequestHandler
+from marketing_cloud_proxy.client import (
+    EmailSignupRequestHandler,
+    ListRequestHandler,
+    SupportingCastWebhookHandler,
+)
 from marketing_cloud_proxy.mailchimp import MailchimpForwarder
 from marketing_cloud_proxy.errors import InvalidDataError
 
@@ -18,7 +22,7 @@ sentry_sdk.init(
     # Set traces_sample_rate to 1.0 to capture 100%
     # of transactions for performance monitoring.
     # We recommend adjusting this value in production.
-    traces_sample_rate=1.0
+    traces_sample_rate=1.0,
 )
 
 app = Flask(__name__)
@@ -29,6 +33,7 @@ path_prefix = os.environ.get("APP_NAME")
 @app.route(f"/{path_prefix}/", methods=["GET"])
 def healthcheck():
     return Response(status=204)
+
 
 @app.route(f"/{path_prefix}/subscribe", methods=["POST"])
 def subscribe():
@@ -55,3 +60,9 @@ def lists():
 
     lqh = ListRequestHandler()
     return lqh.lists_json()
+
+
+@app.route(f"/{path_prefix}/supporting-cast", methods=["POST"])
+def supporting_cast():
+    handler = SupportingCastWebhookHandler(request)
+    return handler.response

@@ -6,8 +6,7 @@ import requests
 from dotmap import DotMap
 from marketing_cloud_proxy import app, client, mailchimp
 
-from tests.conftest import (MockFuelClient, MockFuelClientPatchFailure,
-                            dynamo_table)
+from tests.conftest import MockFuelClient, MockFuelClientPatchFailure, dynamo_table
 
 
 @pytest.fixture(autouse=True)
@@ -182,13 +181,13 @@ def test_migrated_mailchimp_list(monkeypatch, mocker):
         monkeypatch.setattr(
             mailchimp, "mailchimp_id_to_marketingcloud_list", {"12345abcde": "Stations"}
         )
-        spy = mocker.spy(client.EmailSignupRequestHandler, 'subscribe')
+        spy = mocker.spy(client.EmailSignupRequestHandler, "subscribe")
         res = test_client.post(
             "/marketing-cloud-proxy/subscribe",
             data={"email": "test@example.com", "list": "12345abcde"},
         )
         data = json.loads(res.data)
-        assert spy.call_args[0][0].list == 'Stations'
+        assert spy.call_args[0][0].list == "Stations"
         assert data["status"] == "subscribed"
 
 
@@ -204,3 +203,69 @@ def test_error_from_marketingcloud(monkeypatch):
         data = json.loads(res.data)
         assert res.status_code == 400
         assert data["status"] == "failure"
+
+
+@moto.mock_dynamodb2
+def test_sc_subscription_update(monkeypatch, mocker):
+    dynamo_table()
+    with app.app.test_client() as test_client:
+        monkeypatch.setattr(client, "FuelSDK", MockFuelClientPatchFailure)
+        spy = mocker.spy(client.SupportingCastWebhookHandler, "subscribe")
+
+        # Mock Supporting Cast API responses
+        monkeypatch.setattr(
+            client.SupportingCastWebhookHandler,
+            "_get_member_info_from_id",
+            lambda *args, **kwargs: {
+                "id": 607420,
+                "email": "supportingcast-test-vHCoXHhYrX@mikehearn.net",
+                "external_id": None,
+                "status": "suspended",
+                "plan_id": 1025,
+                "plan_ids": [1025],
+                "product_ids": [],
+                "login_token": "abc123",
+            },
+        )
+        monkeypatch.setattr(
+            client.SupportingCastWebhookHandler,
+            "_get_plan_info_from_id",
+            lambda *args, **kwargs: {
+                "id": 1025,
+                "plan_group_id": 315,
+                "name": "Butterflies",
+                "benefits": {
+                    "benefit1": "Ad Free + Audio Extras",
+                    "benefit2": "Monthly Audio/Video BTS",
+                    "benefit3": "Annual Trivia Night Event + Invitation-Only Virtual Events + Quarterly AMA",
+                    "benefit4": "Radiolab Patch",
+                    "benefit5": "Early Access to Digital Pop-Up Store + 10% Off",
+                },
+                "live": True,
+                "free": 0,
+                "amount": 1000,
+                "currency": "usd",
+                "interval": "month",
+                "interval_count": 1,
+                "stripe_pricing_plan_id": "price_1IdGzqJqYS3zuGzpJ9IJlTgh",
+                "mailchimp_id": None,
+                "private": 0,
+            },
+        )
+
+        res = test_client.post(
+            "/marketing-cloud-proxy/supporting-cast",
+            json={
+                "event": "subscription.updated",
+                "event_id": 586,
+                "webhook_id": 34,
+                "timestamp": "2021-10-19T14:33:35+00:00",
+                "subscription": {
+                    "id": 541150,
+                    "status": "suspended",
+                    "plan_id": "1025",
+                    "member_id": 607420,
+                },
+            },
+        )
+        assert json.loads(res.data)["status"] == "success"
