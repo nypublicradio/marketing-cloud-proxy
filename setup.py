@@ -35,6 +35,7 @@ setup(
         'requests',
         'sentry-sdk[flask]',
         'serverless-wsgi',
+        'setuptools<58.0.0'
     ],
     license='BSD',
     long_description=long_description,
