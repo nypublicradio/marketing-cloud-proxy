@@ -261,7 +261,6 @@ class SupportingCastWebhookHandler:
 
         # Then, flip the list columns to indicate they have signed up
         self.de_row.props = {
-            "email_address": email_address,
             "plan": plan,
             "plan_status": plan_status,
             "updated_date": updated_date
