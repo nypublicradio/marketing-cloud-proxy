@@ -193,24 +193,21 @@ class SupportingCastWebhookHandler:
         self.subscribe()
 
     def _extract_info_from_webhook_event(self, request):
-        try:
-            if not request.data:
-                raise NoDataProvidedError
-
-            event_info_dict = request.get_json()
-            member_id = event_info_dict["subscription"]["member_id"]
-            plan_id = event_info_dict["subscription"]["plan_id"]
-            member_info_dict = self._get_member_info_from_id(member_id)
-            plan_info_dict = self._get_plan_info_from_id(plan_id)
-
-            return {
-                "email_address": member_info_dict["email"],
-                "plan": plan_info_dict["name"],
-                "plan_status": event_info_dict["subscription"]["status"],
-            }
-
-        except NoDataProvidedError:
+        if not request.data:
             raise InvalidDataError("No webhook info was provided")
+
+        event_info_dict = request.get_json()
+        member_id = event_info_dict["subscription"]["member_id"]
+        plan_id = event_info_dict["subscription"]["plan_id"]
+        member_info_dict = self._get_member_info_from_id(member_id)
+        plan_info_dict = self._get_plan_info_from_id(plan_id)
+
+        return {
+            "email_address": member_info_dict["email"],
+            "plan": plan_info_dict["name"],
+            "plan_status": event_info_dict["subscription"]["status"],
+        }
+
 
     def _create_data_extension_row_stub(self):
         de_row = FuelSDK.ET_DataExtension_Row()
