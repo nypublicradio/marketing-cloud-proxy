@@ -9,7 +9,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setup(
     author='NYPR Digital',
     author_email='digitalops@nypublicradio.org',
-    description=__doc__,
+    description=__doc__.strip(),
     entry_points={
         'distutils.commands': [
             'requirements = nyprsetuptools:InstallRequirements',

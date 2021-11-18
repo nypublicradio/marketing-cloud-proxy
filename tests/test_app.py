@@ -219,6 +219,8 @@ def test_sc_subscription_update(monkeypatch, mocker):
             lambda *args, **kwargs: {
                 "id": 607420,
                 "email": "supportingcast-test-vHCoXHhYrX@mikehearn.net",
+                "first_name": "Test",
+                "last_name": "McTesterson",
                 "external_id": None,
                 "status": "suspended",
                 "plan_id": 1025,
