@@ -204,6 +204,8 @@ class SupportingCastWebhookHandler:
 
         return {
             "email_address": member_info_dict["email"],
+            "first_name": member_info_dict["first_name"],
+            "last_name": member_info_dict["last_name"],
             "plan": plan_info_dict["name"],
             "plan_status": event_info_dict["subscription"]["status"],
         }
@@ -239,6 +241,8 @@ class SupportingCastWebhookHandler:
 
     def subscribe(self):
         email_address = self.webhook_info["email_address"]
+        first_name = self.webhook_info["first_name"]
+        last_name = self.webhook_info["last_name"]
         plan = self.webhook_info["plan"]
         plan_status = self.webhook_info["plan_status"]
         creation_date = datetime.now(pytz.timezone("America/New_York")).strftime(
@@ -259,6 +263,8 @@ class SupportingCastWebhookHandler:
         # Then, flip the list columns to indicate they have signed up
         self.de_row.props = {
             "email_address": email_address,
+            "first_name": first_name,
+            "last_name": last_name,
             "plan": plan,
             "plan_status": plan_status,
             "updated_date": updated_date
