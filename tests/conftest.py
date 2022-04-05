@@ -16,6 +16,7 @@ def dynamo_table():
         TableName=DYNAMO_TABLE_NAME,
         KeySchema=[{"AttributeName": "KeyName", "KeyType": "HASH"}],
         AttributeDefinitions=[{"AttributeName": "KeyName", "AttributeType": "S"}],
+        BillingMode='PAY_PER_REQUEST',
     )
     table.put_item(
         TableName=DYNAMO_TABLE_NAME,

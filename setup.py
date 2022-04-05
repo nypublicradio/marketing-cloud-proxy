@@ -27,14 +27,14 @@ setup(
     install_requires=[
         'PyJWT==1.7.1',
         'Salesforce-FuelSDK @ git+https://github.com/nypublicradio/FuelSDK-Python.git',
-        'Werkzeug==1.0.1',
-        'boto3',
+        'Werkzeug==1.0.1', # for compatitility with Flask 1.x
+        'boto3~=1.21',
         'flask==1.1.4',
         'python-dotenv',
         'pytz',
         'requests',
         'sentry-sdk[flask]',
-        'serverless-wsgi',
+        'serverless-wsgi<2.0', # for compatibility with Werkzeug 1.x
         'setuptools==57.5.0'
     ],
     license='BSD',
@@ -49,7 +49,7 @@ setup(
     ],
     tests_require=[
         'dotmap',
-        'moto',
+        'moto==3.0.4',
         'pytest',
         'pytest-cov',
         'pytest-env',
