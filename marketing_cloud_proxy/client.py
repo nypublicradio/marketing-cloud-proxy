@@ -9,6 +9,7 @@ import FuelSDK
 import jwt
 import pytz
 import requests
+from simple_salesforce import format_soql, Salesforce, SalesforceLogin
 from werkzeug.exceptions import BadRequestKeyError
 
 from marketing_cloud_proxy import settings
@@ -101,21 +102,35 @@ class MarketingCloudAuthClient:
         return FuelSDK.ET_Client(False, False, {"jwt": jwt_token, **config})
 
 
+class SFClient(Salesforce):
+    def __init__(self):
+        '''
+        Authenticates with SF and initializes a Salesforce object
+        '''
+        session_id, instance = SalesforceLogin(
+            username=settings.SF_USERNAME,
+            password=settings.SF_PASS,
+            security_token=settings.SF_SECURITY_TOKEN,
+            domain=settings.SF_DOMAIN
+        )
+        super().__init__(instance=instance, session_id=session_id)
+
+    @staticmethod
+    def sanitize_soql(string):
+        '''
+        Removes Salesforce reserved characters for database safety
+        '''
+        return string.replace("\\", "\\\\").replace("'", "\\'")
+
+
 class EmailSignupRequestHandler:
     def __init__(self, request):
         self.email = self.__extract_email_from_request(request)
         self.list = self.__extract_list_from_request(request)
-        self.auth_client = MarketingCloudAuthClient.instantiate_client()
-        self.de_row = self.__create_data_extension_row_stub()
+        self.client = SFClient()
 
     def is_email_valid(self):
         return bool(re.match(r"[^@]+@[^@]+\.[^@]+", self.email))
-
-    def __create_data_extension_row_stub(self):
-        de_row = FuelSDK.ET_DataExtension_Row()
-        de_row.CustomerKey = os.environ.get("MC_DATA_EXTENSION")
-        de_row.auth_stub = self.auth_client
-        return de_row
 
     def __extract_email_from_request(self, request):
         [_, email_address] = self.__extract_email_and_list_from_request(request)
@@ -147,26 +162,22 @@ class EmailSignupRequestHandler:
         return [email_list, email_address]
 
     def subscribe(self):
-        # First attempt to add email to overall Master Preferences data extension
-        self.de_row.props = {
-            "email_address": self.email,
-            "creation_date": datetime.now(pytz.timezone("America/New_York")).strftime(
-                "%-m/%-d/%Y %H:%M:%S %p"
-            ),
-        }
-        self.de_row.post()
+        subscription = self.client.query(format_soql(
+            "SELECT Id FROM cfg_Subscription__c WHERE Name = {}", "{}".format(self.list))
+        )
+        subscription_id = subscription['records'][0]['Id']
+        contact = self.client.Contact.create({
+            'LastName': 'NoLastName',
+            'Email': format_soql(self.email)
+        })
+        if contact['errors']:
+            return {"status": "failure", "detail": "User could not be subscribed"}, 400
 
-        # Then flip the list columns to indicate they have signed up
-        self.de_row.props = {
-            "email_address": self.email,
-            self.list: "true",
-            f"{self.list} Opt In Date": datetime.now(
-                pytz.timezone("America/New_York")
-            ).strftime("%-m/%-d/%Y %H:%M:%S %p"),
-            f"{self.email} Opt out Date": "",
-        }
-        patch_response = self.de_row.patch()
-        if patch_response.results[0].StatusCode == "Error":
+        subscription_member = self.client.cfg_Subscription_Member__c.create({
+            'cfg_Subscription__c': subscription_id,
+            'cfg_Contact__c': contact.get('id')
+        })
+        if subscription_member['errors']:
             return {"status": "failure", "detail": "User could not be subscribed"}, 400
 
         return {"status": "subscribed", "detail": "Email successfully added"}
@@ -279,30 +290,9 @@ class SupportingCastWebhookHandler:
 
 class ListRequestHandler:
     def __init__(self):
-        self.auth_client = MarketingCloudAuthClient.instantiate_client()
-        self.de_column_object = self.__create_data_extension_column_stub()
-
-    def __create_data_extension_column_stub(self):
-        de_column = FuelSDK.ET_DataExtension_Column()
-        de_column.CustomerKey = os.environ.get("MC_DATA_EXTENSION")
-        de_column.auth_stub = self.auth_client
-        return de_column
+        self.client = SFClient()
 
     def lists_json(self):
-        self.de_column_object.props = ["Name"]
-        self.de_column_object.search_filter = {
-            "Property": "CustomerKey",
-            "SimpleOperator": "like",
-            "Value": os.environ.get("MC_DATA_EXTENSION"),
-        }
-        get_response = self.de_column_object.get()
-
-        # Reduces response to just fields that contain the phrase "Opt In" (i.e.
-        # Radiolab Newsletter Opt In Date) - this will remove non-list fields - then
-        # we split on the phrase "Opt In" so it returns *only* the list names
-        lists = [
-            str(x.Name).split("Opt In")[0].strip()
-            for x in get_response.results
-            if "Opt In" in x.Name
-        ]
+        list_records = self.client.query_all("SELECT Name FROM cfg_Subscription__c")
+        lists = [x['Name'] for x in list_records['records']]
         return {"lists": lists}

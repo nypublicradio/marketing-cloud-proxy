@@ -33,3 +33,4 @@ htmlcov/
 __pycache__
 config.python
 node_modules
+*.swp

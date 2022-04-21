@@ -4,15 +4,22 @@ import moto
 import pytest
 import requests
 from dotmap import DotMap
-from marketing_cloud_proxy import app, client, mailchimp
+from marketing_cloud_proxy import app, client
 
-from tests.conftest import MockFuelClient, MockFuelClientPatchFailure, dynamo_table
+from tests.conftest import (
+    dynamo_table, MockFuelClient, MockFuelClientPatchFailure, MockSFClient
+)
 
 
 @pytest.fixture(autouse=True)
 def patch_et_client(monkeypatch):
     dynamo_table()
     monkeypatch.setattr(client, "FuelSDK", MockFuelClient)
+
+
+@pytest.fixture(autouse=True)
+def patch_sf_client(monkeypatch):
+    monkeypatch.setattr(client, "SFClient", MockSFClient)
 
 
 @moto.mock_dynamodb2
@@ -29,27 +36,25 @@ def test_get_fails():
         assert res.status_code == 405
 
 
-@moto.mock_dynamodb2
 def test_post_with_json():
-    dynamo_table()
     with app.app.test_client() as client:
         res = client.post(
             "/marketing-cloud-proxy/subscribe",
-            json={"email": "test-001@example.com", "list": "Stations"},
+            json={"email": "test-002@example.com", "list": "Radiolab"},
         )
         data = json.loads(res.data)
+        #TODO add more useful assertion
         assert data["status"] == "subscribed"
 
 
-@moto.mock_dynamodb2
 def test_post_with_form():
-    dynamo_table()
     with app.app.test_client() as client:
         res = client.post(
             "/marketing-cloud-proxy/subscribe",
-            data={"email": "test-001@example.com", "list": "Stations"},
+            data={"email": "test-003@example.com", "list": "Radiolab"},
         )
         data = json.loads(res.data)
+        #TODO add more useful assertion
         assert data["status"] == "subscribed"
 
 
@@ -175,23 +180,6 @@ def test_unmigrated_mailchimp_list_failure(monkeypatch):
 
 
 @moto.mock_dynamodb2
-def test_migrated_mailchimp_list(monkeypatch, mocker):
-    dynamo_table()
-    with app.app.test_client() as test_client:
-        monkeypatch.setattr(
-            mailchimp, "mailchimp_id_to_marketingcloud_list", {"12345abcde": "Stations"}
-        )
-        spy = mocker.spy(client.EmailSignupRequestHandler, "subscribe")
-        res = test_client.post(
-            "/marketing-cloud-proxy/subscribe",
-            data={"email": "test@example.com", "list": "12345abcde"},
-        )
-        data = json.loads(res.data)
-        assert spy.call_args[0][0].list == "Stations"
-        assert data["status"] == "subscribed"
-
-
-@moto.mock_dynamodb2
 def test_error_from_marketingcloud(monkeypatch):
     dynamo_table()
     with app.app.test_client() as test_client:
@@ -271,3 +259,11 @@ def test_sc_subscription_update(monkeypatch, mocker):
             },
         )
         assert json.loads(res.data)["status"] == "success"
+
+def test_list_request_handler():
+    with app.app.test_client() as client:
+        res = client.get("/marketing-cloud-proxy/lists")
+        data = json.loads(res.data)
+        #TODO add more useful assertion
+        assert isinstance(data["lists"], list)
+
