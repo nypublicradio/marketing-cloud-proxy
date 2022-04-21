@@ -80,6 +80,9 @@ class MockSFClient:
     def __getattr__(self, name):
         return MockSFType(name)
 
+    def create(self):
+        pass
+
     def query(self, query, include_deleted=False, **kwargs):
         return OrderedDict([
             ('totalSize', 1),

@@ -162,25 +162,26 @@ class EmailSignupRequestHandler:
         return [email_list, email_address]
 
     def subscribe(self):
-        subscription = self.client.query(format_soql(
-            "SELECT Id FROM cfg_Subscription__c WHERE Name = {}", "{}".format(self.list))
-        )
-        subscription_id = subscription['records'][0]['Id']
-        contact = self.client.Contact.create({
-            'LastName': 'NoLastName',
-            'Email': format_soql(self.email)
-        })
+        email_list = self.client.query(format_soql(
+            "SELECT Id FROM cfg_Subscription__c WHERE Name = {}", "{}".format(self.list)))
+        try:
+            list_id = email_list['records'][0]['Id']
+        except IndexError:
+            return {"status": "failure", "detail": "User could not be subscribed; list does not exist"}, 400
+
+        contact = self.client.Contact.create({'LastName': 'NoLastName',
+                                              'Email': format_soql(self.email)})
         if contact['errors']:
-            return {"status": "failure", "detail": "User could not be subscribed"}, 400
+            return {"status": "failure", "detail": "User could not be subscribed; error adding Contact"}, 400
 
         subscription_member = self.client.cfg_Subscription_Member__c.create({
-            'cfg_Subscription__c': subscription_id,
+            'cfg_Subscription__c': list_id,
             'cfg_Contact__c': contact.get('id')
         })
         if subscription_member['errors']:
             return {"status": "failure", "detail": "User could not be subscribed"}, 400
 
-        return {"status": "subscribed", "detail": "Email successfully added"}
+        return {"status": "subscribed", "detail": "Email successfully added to list"}
 
     @staticmethod
     def failure_response(message):
