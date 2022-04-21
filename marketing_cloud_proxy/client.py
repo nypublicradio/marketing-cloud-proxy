@@ -115,13 +115,6 @@ class SFClient(Salesforce):
         )
         super().__init__(instance=instance, session_id=session_id)
 
-    @staticmethod
-    def sanitize_soql(string):
-        '''
-        Removes Salesforce reserved characters for database safety
-        '''
-        return string.replace("\\", "\\\\").replace("'", "\\'")
-
 
 class EmailSignupRequestHandler:
     def __init__(self, request):
