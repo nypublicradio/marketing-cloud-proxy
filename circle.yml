@@ -63,7 +63,7 @@ jobs:
               --implementation cp \
               --python 3.6 \
               --only-binary=:all: --upgrade \
-              --target ~/pkg \
+              --target workspace/pkg \
               cryptography
 
             pip install . -t workspace/pkg
