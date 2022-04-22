@@ -10,6 +10,7 @@ from marketing_cloud_proxy.client import (
     ListRequestHandler,
     SupportingCastWebhookHandler,
 )
+from marketing_cloud_proxy.mailchimp import MailchimpForwarder
 from marketing_cloud_proxy.errors import InvalidDataError
 
 
@@ -43,6 +44,13 @@ def subscribe():
 
     if not email_handler.is_email_valid():
         return EmailSignupRequestHandler.failure_response("Email address is invalid")
+
+    mf = MailchimpForwarder(email_handler.email, email_handler.list)
+    if mf.is_mailchimp_address:
+        if mf.is_list_migrated:
+            email_handler.list = mf.to_marketing_cloud_list()
+        else:
+            return mf.proxy_to_mailchimp()
 
     return email_handler.subscribe()
 

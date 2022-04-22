@@ -4,7 +4,7 @@ import moto
 import pytest
 import requests
 from dotmap import DotMap
-from marketing_cloud_proxy import app, client
+from marketing_cloud_proxy import app, client, mailchimp
 
 from tests.conftest import (
     dynamo_table, MockFuelClient, MockFuelClientPatchFailure, MockSFClient
@@ -125,6 +125,53 @@ class ResponseMock:
 
     def post(self):
         return self.response
+
+
+def test_unmigrated_mailchimp_list_success(monkeypatch):
+    with app.app.test_client() as test_client:
+        expected_response = b'{"status":"subscribed","email_address":"YWFxoC9mCv-wnyc@mikehearn.net","list_id":"65dbec786b", "detail": "Email successfully added"}'
+        monkeypatch.setattr(
+            requests,
+            "post",
+            lambda *args, **kwargs: DotMap({"ok": True, "content": expected_response}),
+        )
+        res = test_client.post(
+            "/marketing-cloud-proxy/subscribe",
+            data={"email": "test@example.com", "list": "1234567890"},
+        )
+        data = json.loads(res.data)
+        assert {**json.loads(expected_response), "additional_detail": "proxied"} == data
+
+
+def test_unmigrated_mailchimp_list_failure(monkeypatch):
+    with app.app.test_client() as test_client:
+        expected_response = b'{"detail":"test@example.com looks fake or invalid, please enter a real email address.","instance":"d5ebfbe4-a25e-2956-7e72-09574da7a6e2","status":400,"title":"Invalid Resource","type":"https://mailchimp.com/developer/marketing/docs/errors/"}'
+        monkeypatch.setattr(
+            requests,
+            "post",
+            lambda *args, **kwargs: DotMap({"ok": False, "content": expected_response}),
+        )
+        res = test_client.post(
+            "/marketing-cloud-proxy/subscribe",
+            data={"email": "test@example.com", "list": "12345abcde"},
+        )
+        data = json.loads(res.data)
+        assert {**json.loads(expected_response), "additional_detail": "proxied"} == data
+
+
+def test_migrated_mailchimp_list(monkeypatch, mocker):
+    with app.app.test_client() as test_client:
+        monkeypatch.setattr(
+            mailchimp, "mailchimp_id_to_marketingcloud_list", {"12345abcde": "Stations"}
+        )
+        spy = mocker.spy(client.EmailSignupRequestHandler, "subscribe")
+        res = test_client.post(
+            "/marketing-cloud-proxy/subscribe",
+            data={"email": "test@example.com", "list": "12345abcde"},
+        )
+        data = json.loads(res.data)
+        assert spy.call_args[0][0].list == "Stations"
+        assert data["status"] == "subscribed"
 
 
 @moto.mock_dynamodb2
