@@ -155,21 +155,42 @@ class EmailSignupRequestHandler:
         return [email_list, email_address]
 
     def subscribe(self):
+        '''
+        Checks that the email list from the request exists and subscribes the
+        email from the request to the list, creating a new Salesforce Contact
+        if there isn't an existing one.
+        '''
         email_list = self.client.query(format_soql(
             "SELECT Id FROM cfg_Subscription__c WHERE Name = {}", "{}".format(self.list)))
+
         try:
             list_id = email_list['records'][0]['Id']
         except IndexError:
-            return {"status": "failure", "detail": "User could not be subscribed; list does not exist"}, 400
+            return {
+                "status": "failure",
+                "detail": "User could not be subscribed; list does not exist"
+            }, 400
 
-        contact = self.client.Contact.create({'LastName': 'NoLastName',
-                                              'Email': format_soql(self.email)})
-        if contact['errors']:
-            return {"status": "failure", "detail": "User could not be subscribed; error adding Contact"}, 400
+        contacts = self.client.query_all(format_soql(
+            "SELECT Id from Contact WHERE Email = {}", "{}".format(self.email)))
+
+        try:
+            # get the most recent Contact for this email, if one exists
+            contact_id = contacts['records'][-1]['Id']
+        except IndexError:
+            contact = self.client.Contact.create({'LastName': 'NoLastName',
+                                                  'Email': format_soql(self.email)})
+            if contact['errors']:
+                return {
+                    "status": "failure",
+                    "detail": "User could not be subscribed; error adding Contact"
+                }, 400
+
+            contact_id = contact.get('id')
 
         subscription_member = self.client.cfg_Subscription_Member__c.create({
             'cfg_Subscription__c': list_id,
-            'cfg_Contact__c': contact.get('id')
+            'cfg_Contact__c': contact_id
         })
         if subscription_member['errors']:
             return {"status": "failure", "detail": "User could not be subscribed"}, 400

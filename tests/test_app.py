@@ -16,23 +16,19 @@ def patch_et_client(monkeypatch):
     dynamo_table()
     monkeypatch.setattr(client, "FuelSDK", MockFuelClient)
 
-
 @pytest.fixture(autouse=True)
 def patch_sf_client(monkeypatch):
     monkeypatch.setattr(client, "SFClient", MockSFClient)
-
 
 def test_healthcheck():
     with app.app.test_client() as test_client:
         res = test_client.get("/marketing-cloud-proxy/")
         assert res.status_code == 204
 
-
 def test_get_fails():
     with app.app.test_client() as test_client:
         res = test_client.get("/marketing-cloud-proxy/subscribe")
         assert res.status_code == 405
-
 
 def test_post_with_json():
     with app.app.test_client() as test_client:
@@ -43,7 +39,6 @@ def test_post_with_json():
         data = json.loads(res.data)
         assert data["status"] == "subscribed"
 
-
 def test_post_with_form():
     with app.app.test_client() as test_client:
         res = test_client.post(
@@ -53,6 +48,15 @@ def test_post_with_form():
         data = json.loads(res.data)
         assert data["status"] == "subscribed"
 
+def test_post_with_no_existing_contact(monkeypatch):
+    with app.app.test_client() as test_client:
+        monkeypatch.setattr(MockSFClient, "query_all", MockSFClient.query_all_no_results)
+        res = test_client.post(
+            "/marketing-cloud-proxy/subscribe",
+            data={"email": "test-003@example.com", "list": "Radiolab"},
+        )
+        data = json.loads(res.data)
+        assert data["status"] == "subscribed"
 
 def test_post_with_no_data():
     with app.app.test_client() as test_client:
@@ -63,7 +67,6 @@ def test_post_with_no_data():
         data = json.loads(res.data)
         assert data["status"] == "failure"
 
-
 def test_post_json_with_no_email():
     with app.app.test_client() as test_client:
         res = test_client.post(
@@ -72,7 +75,6 @@ def test_post_json_with_no_email():
         )
         data = json.loads(res.data)
         assert data["status"] == "failure"
-
 
 def test_post_json_with_no_list():
     with app.app.test_client() as test_client:
@@ -83,7 +85,6 @@ def test_post_json_with_no_list():
         data = json.loads(res.data)
         assert data["status"] == "failure"
 
-
 def test_post_form_with_no_email():
     with app.app.test_client() as test_client:
         res = test_client.post(
@@ -92,7 +93,6 @@ def test_post_form_with_no_email():
         )
         data = json.loads(res.data)
         assert data["status"] == "failure"
-
 
 def test_post_form_with_no_list():
     with app.app.test_client() as test_client:
@@ -103,7 +103,6 @@ def test_post_form_with_no_list():
         data = json.loads(res.data)
         assert data["status"] == "failure"
 
-
 def test_invalid_email():
     with app.app.test_client() as test_client:
         res = test_client.post(
@@ -112,7 +111,6 @@ def test_invalid_email():
         )
         data = json.loads(res.data)
         assert data["status"] == "failure"
-
 
 class ResponseMock:
     def __init__(self, is_ok, response):
@@ -142,7 +140,6 @@ def test_unmigrated_mailchimp_list_success(monkeypatch):
         data = json.loads(res.data)
         assert {**json.loads(expected_response), "additional_detail": "proxied"} == data
 
-
 def test_unmigrated_mailchimp_list_failure(monkeypatch):
     with app.app.test_client() as test_client:
         expected_response = b'{"detail":"test@example.com looks fake or invalid, please enter a real email address.","instance":"d5ebfbe4-a25e-2956-7e72-09574da7a6e2","status":400,"title":"Invalid Resource","type":"https://mailchimp.com/developer/marketing/docs/errors/"}'
@@ -158,7 +155,6 @@ def test_unmigrated_mailchimp_list_failure(monkeypatch):
         data = json.loads(res.data)
         assert {**json.loads(expected_response), "additional_detail": "proxied"} == data
 
-
 def test_migrated_mailchimp_list(monkeypatch, mocker):
     with app.app.test_client() as test_client:
         monkeypatch.setattr(
@@ -172,7 +168,6 @@ def test_migrated_mailchimp_list(monkeypatch, mocker):
         data = json.loads(res.data)
         assert spy.call_args[0][0].list == "Stations"
         assert data["status"] == "subscribed"
-
 
 @moto.mock_dynamodb2
 def test_sc_subscription_update(monkeypatch, mocker, patch_et_client):

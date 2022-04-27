@@ -97,7 +97,16 @@ class MockSFClient:
             ])
         ])
 
+    def query_all_no_results(self, query, include_deleted=False, **kwargs):
+        print('no results')
+        return {
+            'records': [],
+            'totalSize': 0,
+            'done': True
+        }
+
     def query_all(self, query, include_deleted=False, **kwargs):
+        print('found results')
         return {
             'records': [
                 OrderedDict([
@@ -105,6 +114,7 @@ class MockSFClient:
                         ('type', 'cfg_Subscription__c'),
                         ('url', '/services/data/v52.0/sobjects/cfg_Subscription__c/jkl456qrs')
                     ])),
+                    ('Id', 'abc123xyz'),
                     ('Name', 'Gothamist')
                 ]),
                 OrderedDict([
@@ -112,6 +122,7 @@ class MockSFClient:
                         ('type', 'cfg_Subscription__c'),
                         ('url', '/services/data/v52.0/sobjects/cfg_Subscription__c/def789nop')
                     ])),
+                    ('Id', 'def456qrs'),
                     ('Name', 'Radiolab')
                 ])
             ],
