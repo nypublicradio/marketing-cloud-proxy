@@ -98,7 +98,6 @@ class MockSFClient:
         ])
 
     def query_all_no_results(self, query, include_deleted=False, **kwargs):
-        print('no results')
         return {
             'records': [],
             'totalSize': 0,
@@ -106,7 +105,6 @@ class MockSFClient:
         }
 
     def query_all(self, query, include_deleted=False, **kwargs):
-        print('found results')
         return {
             'records': [
                 OrderedDict([
