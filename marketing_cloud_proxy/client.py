@@ -172,7 +172,8 @@ class EmailSignupRequestHandler:
             }, 400
 
         contacts = self.client.query_all(format_soql(
-            "SELECT Id from Contact WHERE Email = {}", "{}".format(self.email)))
+            "SELECT Id, LastModifiedDate from Contact WHERE Email = {} ORDER BY LastModifiedDate, Id ASC", "{}".format(self.email)
+        ))
 
         try:
             # get the most recent Contact for this email, if one exists
