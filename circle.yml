@@ -56,6 +56,16 @@ jobs:
           name: Build Lambda
           command: |
             mkdir -p workspace/pkg
+
+            # https://github.com/pyca/cryptography/issues/6391
+            pip install \
+              --platform manylinux2010_x86_64 \
+              --implementation cp \
+              --python 3.6 \
+              --only-binary=:all: --upgrade \
+              --target workspace/pkg \
+              cryptography
+
             pip install . -t workspace/pkg
       - persist_to_workspace:
           root: workspace

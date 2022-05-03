@@ -57,7 +57,6 @@ def subscribe():
 
 @app.route(f"/{path_prefix}/lists")
 def lists():
-
     lqh = ListRequestHandler()
     return lqh.lists_json()
 
