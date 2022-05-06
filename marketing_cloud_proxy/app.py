@@ -6,9 +6,8 @@ from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 from marketing_cloud_proxy.client import (
-    EmailSignupRequestHandler,
-    ListRequestHandler,
-    SupportingCastWebhookHandler,
+    EmailSignupRequestHandler, failure_response, ListRequestHandler,
+    SupportingCastWebhookHandler
 )
 from marketing_cloud_proxy.mailchimp import MailchimpForwarder
 from marketing_cloud_proxy.errors import InvalidDataError
@@ -40,10 +39,10 @@ def subscribe():
     try:
         email_handler = EmailSignupRequestHandler(request)
     except InvalidDataError as e:
-        return EmailSignupRequestHandler.failure_response(e.message)
+        return failure_response(e.message)
 
     if not email_handler.is_email_valid():
-        return EmailSignupRequestHandler.failure_response("Email address is invalid")
+        return failure_response("Email address is invalid")
 
     mf = MailchimpForwarder(email_handler.email, email_handler.list)
     if mf.is_mailchimp_address:

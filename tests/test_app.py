@@ -53,7 +53,7 @@ def test_post_with_no_existing_contact(monkeypatch):
         monkeypatch.setattr(MockSFClient, "query_all", MockSFClient.query_all_no_results)
         res = test_client.post(
             "/marketing-cloud-proxy/subscribe",
-            data={"email": "test-003@example.com", "list": "Radiolab"},
+            data={"email": "test-new-sub@example.com", "list": "Radiolab"},
         )
         data = json.loads(res.data)
         assert data["status"] == "subscribed"

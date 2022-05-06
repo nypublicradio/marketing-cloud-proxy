@@ -72,6 +72,9 @@ class MockSFType:
     def create(self):
         return OrderedDict([('id', 'abc123xyz'), ('success', True), ('errors', [])])
 
+    def update(self, record_id, data, raw_response=False, headers=None):
+        return 200
+
 
 class MockSFClient:
     def __init__(self):
