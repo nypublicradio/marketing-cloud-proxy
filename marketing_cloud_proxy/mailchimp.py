@@ -15,7 +15,7 @@ mailchimp_id_to_marketingcloud_list = {
     "178fa0b138": "On The Media",
     "0e08e3bf02": "Radiolab Membership",
     "7730d9adc4": "Open Ears Project",
-    "566f296761": "Death Sex and Money",
+    "566f296761": "Death, Sex & Money",
     "0ea8a9e52a": "Operavore",
     "86919b8734": "WQXR Patrons Circle",
     "aa1c2a6097": "This Week In WQXR",
