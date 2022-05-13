@@ -4,6 +4,9 @@ A lambda / Flask app that handles communication with our Salesforce CRM and
 Marketing Cloud email service provider. It currently includes endpoints to
 `subscribe` new users and return all `lists`.
 
+Prod: https://api.wnyc.org/email-proxy/<endpoint>
+
+Demo: https://api.demo.nypr.digital/email-proxy/<endpoint>
 
 ## Installation
 
