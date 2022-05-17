@@ -18,7 +18,7 @@ mailchimp_id_to_marketingcloud_list = {
     "566f296761": "Death, Sex & Money",
     "0ea8a9e52a": "Operavore",
     "86919b8734": "WQXR Patrons Circle",
-    "aa1c2a6097": "This Week In WQXR",
+    "aa1c2a6097": "This Week on WQXR",
     "48a53a67ac": "Podcast Sustainers 2021",
     "fa9d482354": "New Sounds",
     "7faa833e53": "WNYC Sustainers 2021",
