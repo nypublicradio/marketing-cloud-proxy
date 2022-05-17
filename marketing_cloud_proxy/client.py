@@ -9,7 +9,9 @@ import FuelSDK
 import jwt
 import pytz
 import requests
-from simple_salesforce import format_soql, Salesforce, SalesforceLogin
+from simple_salesforce import (
+    format_soql, Salesforce, SalesforceAuthenticationFailed, SalesforceLogin
+)
 from werkzeug.exceptions import BadRequestKeyError
 
 from marketing_cloud_proxy import settings
@@ -34,6 +36,13 @@ config = {
     "useOAuth2Authentication": settings.USE_OAUTH2,
     "wsdl_file_local_loc": settings.MC_WSDL_FILE_LOCAL_LOCATION,
 }
+
+
+def failure_response(message):
+    return {
+        "status": "failure",
+        "detail": message,
+    }, 400
 
 
 class MarketingCloudAuthClient:
@@ -120,7 +129,6 @@ class EmailSignupRequestHandler:
     def __init__(self, request):
         self.email = self.__extract_email_from_request(request)
         self.list = self.__extract_list_from_request(request)
-        self.client = SFClient()
 
     def is_email_valid(self):
         return bool(re.match(r"[^@]+@[^@]+\.[^@]+", self.email))
@@ -157,53 +165,67 @@ class EmailSignupRequestHandler:
     def subscribe(self):
         '''
         Checks that the email list from the request exists and subscribes the
-        email from the request to the list, creating a new Salesforce Contact
-        if there isn't an existing one.
+        email from the request to the list, creating a new Salesforce "Contact"
+        if one doesn't exist and creating/updating the "Subscription Member".
         '''
-        email_list = self.client.query(format_soql(
+        try:
+            client = SFClient()
+        except SalesforceAuthenticationFailed as e:
+            return failure_response(e.__str__())
+
+        email_list = client.query(format_soql(
             "SELECT Id FROM cfg_Subscription__c WHERE Name = {}", "{}".format(self.list)))
 
         try:
             list_id = email_list['records'][0]['Id']
         except IndexError:
-            return {
-                "status": "failure",
-                "detail": "User could not be subscribed; list does not exist"
-            }, 400
+            return failure_response("User could not be subscribed; list does not exist")
 
-        contacts = self.client.query_all(format_soql(
-            "SELECT Id, LastModifiedDate from Contact WHERE Email = {} ORDER BY LastModifiedDate, Id ASC", "{}".format(self.email)
+        contacts = client.query_all(format_soql(
+            """SELECT Id, LastModifiedDate from Contact WHERE Email = '{}'
+               ORDER BY LastModifiedDate, Id ASC""".format(self.email)
         ))
 
         try:
             # get the most recent Contact for this email, if one exists
             contact_id = contacts['records'][-1]['Id']
         except IndexError:
-            contact = self.client.Contact.create({'LastName': 'NoLastName',
-                                                  'Email': format_soql(self.email)})
+            contact = client.Contact.create({'LastName': 'NoLastName',
+                                             'Email': format_soql(self.email)})
             if contact['errors']:
-                return {
-                    "status": "failure",
-                    "detail": "User could not be subscribed; error adding Contact"
-                }, 400
+                return failure_response("User could not be subscribed; error adding Contact")
 
             contact_id = contact.get('id')
 
-        subscription_member = self.client.cfg_Subscription_Member__c.create({
-            'cfg_Subscription__c': list_id,
-            'cfg_Contact__c': contact_id
+        subscription_members = client.query_all(format_soql(
+            """SELECT Id, LastModifiedDate FROM cfg_Subscription_Member__c
+               WHERE cfg_Subscription__c = '{}' AND cfg_Contact__c = '{}'
+               ORDER BY LastModifiedDate, Id ASC""".format(list_id, contact_id)))
+
+        try:
+            # get the most recent Subscription Member, if one exists
+            sub_member_id = subscription_members['records'][-1]['Id']
+        except IndexError:
+            new_sub = client.cfg_Subscription_Member__c.create({
+                'cfg_Subscription__c': list_id,
+                'cfg_Contact__c': contact_id,
+                'cfg_Active__c': True,
+                'cfg_Opt_In_Date__c': datetime.now(pytz.timezone("UTC")).strftime("%Y-%m-%d")
+            })
+            if new_sub['errors']:
+                failure_response("User could not be subscribed; error adding subscription member")
+
+            return {"status": "subscribed", "detail": "Email successfully added to list"}
+
+        update_sub_status = client.cfg_Subscription_Member__c.update('Id/{}'.format(sub_member_id),{
+            'cfg_Active__c': True,
+            'cfg_Opt_In_Date__c': datetime.now(pytz.timezone("UTC")).strftime("%Y-%m-%d")
         })
-        if subscription_member['errors']:
-            return {"status": "failure", "detail": "User could not be subscribed"}, 400
 
-        return {"status": "subscribed", "detail": "Email successfully added to list"}
+        if update_sub_status != 200:
+            failure_response("Error updating subscription")
 
-    @staticmethod
-    def failure_response(message):
-        return {
-            "status": "failure",
-            "detail": message,
-        }, 400
+        return {"status": "subscribed", "detail": "Subscription successfully updated"}
 
 
 class SupportingCastWebhookHandler:
@@ -305,10 +327,12 @@ class SupportingCastWebhookHandler:
 
 
 class ListRequestHandler:
-    def __init__(self):
-        self.client = SFClient()
-
     def lists_json(self):
-        list_records = self.client.query_all("SELECT Name FROM cfg_Subscription__c")
+        try:
+            client = SFClient()
+        except SalesforceAuthenticationFailed as e:
+            return failure_response(e.__str__())
+
+        list_records = client.query_all("SELECT Name FROM cfg_Subscription__c")
         lists = [x['Name'] for x in list_records['records']]
         return {"lists": lists}
