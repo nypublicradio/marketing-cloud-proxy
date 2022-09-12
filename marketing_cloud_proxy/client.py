@@ -127,40 +127,27 @@ class SFClient(Salesforce):
 
 class EmailSignupRequestHandler:
     def __init__(self, request):
-        self.email = self.__extract_email_from_request(request)
-        self.list = self.__extract_list_from_request(request)
-
-    def is_email_valid(self):
-        return bool(re.match(r"[^@]+@[^@]+\.[^@]+", self.email))
-
-    def __extract_email_from_request(self, request):
-        [_, email_address] = self.__extract_email_and_list_from_request(request)
-        return email_address
-
-    def __extract_list_from_request(self, request):
-        [email_list, _] = self.__extract_email_and_list_from_request(request)
-        return email_list
-
-    def __extract_email_and_list_from_request(self, request):
         try:
             if not request.form and not request.data:
                 raise NoDataProvidedError
 
-            # POST submitted via api
             if request.data:
+                # POST submitted via api
                 request_dict = json.loads(request.data)
-                email_list = request_dict["list"]
-                email_address = request_dict["email"]
-
-            # POST submitted via form
             else:
-                email_list = request.form["list"]
-                email_address = request.form["email"]
+                # POST submitted via form
+                request_dict = request.form
+
+            self.lists = request_dict["list"].split('++')
+            self.email = request_dict["email"]
+
         except NoDataProvidedError:
             raise InvalidDataError("No email or list was provided")
         except (BadRequestKeyError, KeyError):
             raise InvalidDataError("Requires both an email and a list")
-        return [email_list, email_address]
+
+    def is_email_valid(self):
+        return bool(re.match(r"[^@]+@[^@]+\.[^@]+", self.email))
 
     def subscribe(self):
         '''
@@ -172,14 +159,6 @@ class EmailSignupRequestHandler:
             client = SFClient()
         except SalesforceAuthenticationFailed as e:
             return failure_response(e.__str__())
-
-        email_list = client.query(format_soql(
-            "SELECT Id FROM cfg_Subscription__c WHERE Name = {}", "{}".format(self.list)))
-
-        try:
-            list_id = email_list['records'][0]['Id']
-        except IndexError:
-            return failure_response("User could not be subscribed; list does not exist")
 
         contacts = client.query_all(format_soql(
             """SELECT Id, LastModifiedDate from Contact WHERE Email = '{}'
@@ -196,6 +175,23 @@ class EmailSignupRequestHandler:
                 return failure_response("User could not be subscribed; error adding Contact")
 
             contact_id = contact.get('id')
+
+        subscription = {}
+        for email_list in self.lists:
+            subscription = self._subscribe_to_each(client, email_list, contact_id)
+            if subscription.get('status') == 'failure':
+                break
+
+        return subscription
+
+    def _subscribe_to_each(self, client, email_list, contact_id):
+        canonical_email_list = client.query(format_soql(
+            "SELECT Id FROM cfg_Subscription__c WHERE Name = {}", "{}".format(email_list)))
+
+        try:
+            list_id = canonical_email_list['records'][0]['Id']
+        except IndexError:
+            return failure_response("User could not be subscribed; list does not exist")
 
         subscription_members = client.query_all(format_soql(
             """SELECT Id, LastModifiedDate FROM cfg_Subscription_Member__c
@@ -215,7 +211,7 @@ class EmailSignupRequestHandler:
             if new_sub['errors']:
                 failure_response("User could not be subscribed; error adding subscription member")
 
-            return {"status": "subscribed", "detail": "Email successfully added to list"}
+            return {"status": "subscribed", "detail": "Email successfully added"}
 
         update_sub_status = client.cfg_Subscription_Member__c.update('Id/{}'.format(sub_member_id),{
             'cfg_Active__c': True,

@@ -85,6 +85,16 @@ def test_post_json_with_no_list():
         data = json.loads(res.data)
         assert data["status"] == "failure"
 
+def test_post_with_multiple_lists():
+    with app.app.test_client() as test_client:
+        res = test_client.post(
+            "/marketing-cloud-proxy/subscribe",
+            json={"email": "test-002@example.com",
+                  "list": "Radiolab++Gothamist"},
+        )
+        data = json.loads(res.data)
+        assert data["status"] == "subscribed"
+
 def test_post_form_with_no_email():
     with app.app.test_client() as test_client:
         res = test_client.post(
@@ -111,6 +121,7 @@ def test_invalid_email():
         )
         data = json.loads(res.data)
         assert data["status"] == "failure"
+
 
 class ResponseMock:
     def __init__(self, is_ok, response):
@@ -166,7 +177,7 @@ def test_migrated_mailchimp_list(monkeypatch, mocker):
             data={"email": "test@example.com", "list": "12345abcde"},
         )
         data = json.loads(res.data)
-        assert spy.call_args[0][0].list == "Stations"
+        assert spy.call_args[0][0].lists == ["Stations"]
         assert data["status"] == "subscribed"
 
 @moto.mock_dynamodb2
