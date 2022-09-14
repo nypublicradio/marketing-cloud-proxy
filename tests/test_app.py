@@ -180,7 +180,7 @@ def test_migrated_mailchimp_list(monkeypatch, mocker):
         assert spy.call_args[0][0].lists == ["Stations"]
         assert data["status"] == "subscribed"
 
-@moto.mock_dynamodb2
+@moto.mock_dynamodb
 def test_sc_subscription_update(monkeypatch, mocker, patch_et_client):
     dynamo_table()
     with app.app.test_client() as test_client:

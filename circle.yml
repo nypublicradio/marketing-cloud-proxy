@@ -10,7 +10,7 @@ jobs:
   test:
     working_directory: ~/marketing-cloud-proxy
     docker:
-      - image: circleci/python:3.6
+      - image: circleci/python:3.7
     environment:
       CC_REPORTER: "https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64"
     steps:

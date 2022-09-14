@@ -50,7 +50,8 @@ setup(
     ],
     tests_require=[
         'dotmap',
-        'moto<4.0',
+        'markupsafe==2.0.1',
+        'moto',
         'pytest',
         'pytest-cov',
         'pytest-env',
