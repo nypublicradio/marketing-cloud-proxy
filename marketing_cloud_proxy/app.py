@@ -44,12 +44,16 @@ def subscribe():
     if not email_handler.is_email_valid():
         return failure_response("Email address is invalid")
 
-    mf = MailchimpForwarder(email_handler.email, email_handler.list)
-    if mf.is_mailchimp_address:
-        if mf.is_list_migrated:
-            email_handler.list = mf.to_marketing_cloud_list()
-        else:
-            return mf.proxy_to_mailchimp()
+    mf_list = map(
+        lambda x: MailchimpForwarder(email_handler.email, x), email_handler.lists
+    )
+    for mf in mf_list:
+        if mf.is_mailchimp_address:
+            if mf.is_list_migrated:
+                email_handler.lists.append(mf.to_marketing_cloud_list())
+                email_handler.lists.remove(mf.email_list)
+            else:
+                return mf.proxy_to_mailchimp()
 
     return email_handler.subscribe()
 

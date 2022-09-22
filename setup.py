@@ -30,6 +30,7 @@ setup(
         'Werkzeug==1.0.1', # for compatitility with Flask 1.x
         'boto3~=1.21',
         'flask==1.1.4',
+        'markupsafe==2.0.1',
         'python-dotenv',
         'pytz',
         'requests',
@@ -50,7 +51,7 @@ setup(
     ],
     tests_require=[
         'dotmap',
-        'moto==3.0.4',
+        'moto',
         'pytest',
         'pytest-cov',
         'pytest-env',

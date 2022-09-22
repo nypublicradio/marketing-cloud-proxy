@@ -7,7 +7,7 @@ import moto
 from dotmap import DotMap
 
 
-@moto.mock_dynamodb2
+@moto.mock_dynamodb
 def dynamo_table():
     DYNAMO_TABLE_NAME = (
         os.environ.get("REFRESH_TOKEN_TABLE") or "MarketingCloudAuthTokenStore"
