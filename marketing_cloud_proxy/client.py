@@ -140,7 +140,7 @@ class EmailSignupRequestHandler:
 
             self.lists = request_dict["list"].split('++')
             self.email = request_dict["email"]
-            self.source = request_dict.get('source', 'Unknown')
+            self.source = request_dict.get('source', '')
 
         except NoDataProvidedError:
             raise InvalidDataError("No email or list was provided")
@@ -195,7 +195,7 @@ class EmailSignupRequestHandler:
             return failure_response("User could not be subscribed; list does not exist")
 
         subscription_members = client.query_all(format_soql(
-            """SELECT Id, LastModifiedDate FROM cfg_Subscription_Member__c
+            """SELECT Id, LastModifiedDate, cfg_Active__c FROM cfg_Subscription_Member__c
                WHERE cfg_Subscription__c = '{}' AND cfg_Contact__c = '{}'
                ORDER BY LastModifiedDate, Id ASC""".format(list_id, contact_id)))
 
