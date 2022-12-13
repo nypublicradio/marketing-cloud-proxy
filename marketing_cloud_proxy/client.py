@@ -180,7 +180,7 @@ class EmailSignupRequestHandler:
         subscription = {}
         for email_list in self.lists:
             subscription = self._subscribe_to_each(client, email_list, contact_id)
-            if subscription.get('status') == 'failure':
+            if 'status' not in subscription or subscription.get('status') == 'failure':
                 break
 
         return subscription
