@@ -34,6 +34,15 @@ def test_post_with_json():
     with app.app.test_client() as test_client:
         res = test_client.post(
             "/marketing-cloud-proxy/subscribe",
+            json={"email": "test-002@example.com", "source": "test", "list": "Radiolab"},
+        )
+        data = json.loads(res.data)
+        assert data["status"] == "subscribed"
+
+def test_post_with_json_no_source():
+    with app.app.test_client() as test_client:
+        res = test_client.post(
+            "/marketing-cloud-proxy/subscribe",
             json={"email": "test-002@example.com", "list": "Radiolab"},
         )
         data = json.loads(res.data)
@@ -90,6 +99,7 @@ def test_post_with_multiple_lists():
         res = test_client.post(
             "/marketing-cloud-proxy/subscribe",
             json={"email": "test-002@example.com",
+                  "source": "test source",
                   "list": "Radiolab++Gothamist"},
         )
         data = json.loads(res.data)

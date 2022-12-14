@@ -140,6 +140,7 @@ class EmailSignupRequestHandler:
 
             self.lists = request_dict["list"].split('++')
             self.email = request_dict["email"]
+            self.source = request_dict.get('source', '')
 
         except NoDataProvidedError:
             raise InvalidDataError("No email or list was provided")
@@ -179,7 +180,7 @@ class EmailSignupRequestHandler:
         subscription = {}
         for email_list in self.lists:
             subscription = self._subscribe_to_each(client, email_list, contact_id)
-            if subscription.get('status') == 'failure':
+            if 'status' not in subscription or subscription.get('status') == 'failure':
                 break
 
         return subscription
@@ -206,6 +207,7 @@ class EmailSignupRequestHandler:
                 'cfg_Subscription__c': list_id,
                 'cfg_Contact__c': contact_id,
                 'cfg_Active__c': True,
+                'nypr_Subscription_Source__c': self.source,
                 'cfg_Opt_In_Date__c': datetime.now(pytz.timezone("UTC")).strftime("%Y-%m-%d")
             })
             if new_sub['errors']:
@@ -214,6 +216,7 @@ class EmailSignupRequestHandler:
             return {"status": "subscribed", "detail": "Email successfully added"}
 
         update_sub_status = client.cfg_Subscription_Member__c.update('Id/{}'.format(sub_member_id),{
+            'nypr_Subscription_Source__c': self.source,
             'cfg_Active__c': True,
             'cfg_Opt_In_Date__c': datetime.now(pytz.timezone("UTC")).strftime("%Y-%m-%d")
         })
