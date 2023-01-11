@@ -130,6 +130,7 @@ workflows:
       - deploy_lambda:
           requires:
             - build_lambda
+          context: "AWS Deploy"
           filters:
             tags:
               only:
