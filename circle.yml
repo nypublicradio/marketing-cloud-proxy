@@ -117,6 +117,7 @@ workflows:
           filters:
             tags:
               only: /.*/
+          context: "AWS Deploy"
       - build_lambda:
           requires:
             - test
