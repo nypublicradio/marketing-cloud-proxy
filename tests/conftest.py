@@ -7,12 +7,13 @@ import moto
 from dotmap import DotMap
 
 
-@moto.mock_dynamodb
+@moto.mock_dynamodb2
 def dynamo_table():
     DYNAMO_TABLE_NAME = (
         os.environ.get("REFRESH_TOKEN_TABLE") or "MarketingCloudAuthTokenStore"
     )
-    dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
+    AWS_REGION = os.environ.get("AWS_DEFAULT_REGION") or "us-east-1"
+    dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
     table = dynamodb.create_table(
         TableName=DYNAMO_TABLE_NAME,
         KeySchema=[{"AttributeName": "KeyName", "KeyType": "HASH"}],

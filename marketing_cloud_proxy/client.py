@@ -258,7 +258,6 @@ class SupportingCastWebhookHandler:
             "plan_status": event_info_dict["subscription"]["status"],
         }
 
-
     def _create_data_extension_row_stub(self):
         de_row = FuelSDK.ET_DataExtension_Row()
         de_row.CustomerKey = os.environ.get("MC_SUPPORTING_CAST_DATA_EXTENSION")
@@ -304,7 +303,7 @@ class SupportingCastWebhookHandler:
         # extension
         self.de_row.props = {
             "email_address": email_address,
-            "creation_date": creation_date
+            "creation_date": creation_date,
         }
         self.de_row.post()
 
@@ -315,7 +314,7 @@ class SupportingCastWebhookHandler:
             "last_name": last_name,
             "plan": plan,
             "plan_status": plan_status,
-            "updated_date": updated_date
+            "updated_date": updated_date,
         }
         patch_response = self.de_row.patch()
 
@@ -323,6 +322,173 @@ class SupportingCastWebhookHandler:
 
         if patch_response.results[0].StatusCode == "Error":
             return {"status": "failure"}, 400
+
+
+class OptinmonsterWebhookHandler:
+    """Handles the OptinMonster webhook events and adds or updates the contact
+    in Salesforce.
+
+    Example webhook payload (see tests for more):
+
+    payload = {
+        "lead": {
+            "email": "hello@optinmonster.com",
+            "firstName": "Archie",
+            "lastName": "Monster",
+            "phone": "888-888-8888",
+            "ipAddress": "1.2.3.4",
+            "referrer": "https://optinmonster.com",
+            "timestamp": 1623701598
+        },
+        "lead_options": {
+            "list": "Politics Brief",
+            "tags": [],
+            "data": None
+        },
+        "campaign": {
+            "id": "nppjcagohkl4bx3w1zln",
+            "title": "Demo (Popup)"
+        },
+        "meta": {},
+        "smart_tags": {
+            "page_url": "",
+            "referrer_url": "",
+            "pages_visited": "",
+            "time_on_site": "",
+            "visit_timestamp": "",
+            "page_title": "",
+            "campaign_name": "",
+            "form_email": "",
+            "coupon_label": "",
+            "coupon_code": ""
+        }
+    }
+    """
+
+    def __init__(self, request):
+        self.email = None
+        self.is_valid = True
+
+        try:
+            if not request.form and not request.data:
+                raise NoDataProvidedError
+
+            if request.data:
+                # POST submitted via api
+                request_dict = json.loads(request.data)
+            else:
+                # POST submitted via form
+                request_dict = request.form
+
+
+
+            self.email = request_dict["lead"]["email"]
+            self.lists = request_dict["lead_options"]["list"].split('++')
+            self.source = request_dict["campaign"]["title"]
+            self.first_name = request_dict["lead"]["firstName"]
+            self.last_name = request_dict["lead"]["lastName"]
+
+
+            # check validity of email
+            try:
+                headers = {}
+                headers['X-API-KEY'] = os.environ.get("EVEREST_API_KEY")
+                response = requests.get(f'https://api.everest.validity.com/api/2.0/validation/address/{self.email}', headers=headers)
+
+                validity_response = response.json()
+                self.validity_status = validity_response["results"]["status"]  # valid/invalid
+                self.validity_name = validity_response["results"]["name"]  # e.g. Valid, Domain Invalid, etc.
+            except requests.exceptions.RequestException as e:
+                print(f"Error connecting to Everest API: {e}")
+
+        except NoDataProvidedError:
+            raise InvalidDataError("No email or list was provided")
+        except (BadRequestKeyError, KeyError):
+            raise InvalidDataError("Requires both an email and a list")
+
+    def is_email_valid(self):
+        return bool(re.match(r"[^@]+@[^@]+\.[^@]+", self.email))
+
+    def subscribe(self):
+        '''
+        Checks that the email list from the request exists and subscribes the
+        email from the request to the list, creating a new Salesforce "Contact"
+        if one doesn't exist and creating/updating the "Subscription Member".
+        '''
+        try:
+            client = SFClient()
+        except SalesforceAuthenticationFailed as e:
+            return failure_response(e.__str__())
+
+        contacts = client.query_all(format_soql(
+            """SELECT Id, LastModifiedDate from Contact WHERE Email = '{}'
+            ORDER BY LastModifiedDate, Id ASC""".format(self.email)
+        ))
+
+        try:
+            # get the most recent Contact for this email, if one exists
+            contact_id = contacts['records'][-1]['Id']
+        except IndexError:
+            contact = client.Contact.create(
+                {
+                    'LastName': self.get('last_name', 'NoLastName'),
+                    'FirstName': self.get('first_name', ''),
+                    'Email': format_soql(self.email),
+                    'EmailVerificationScore': f"{self.validity_name.title()}: {self.validity_status.title()}"
+                })
+            if contact['errors']:
+                return failure_response("User could not be subscribed; error adding Contact")
+
+            contact_id = contact.get('id')
+
+        subscription = {}
+        for email_list in self.lists:
+            subscription = self._subscribe_to_each(client, email_list, contact_id)
+            if 'status' not in subscription or subscription.get('status') == 'failure':
+                break
+
+        return subscription
+
+    def _subscribe_to_each(self, client, email_list, contact_id):
+        canonical_email_list = client.query(format_soql(
+            "SELECT Id FROM cfg_Subscription__c WHERE Name = {}", "{}".format(email_list)))
+
+        try:
+            list_id = canonical_email_list['records'][0]['Id']
+        except IndexError:
+            return failure_response("User could not be subscribed; list does not exist")
+
+        subscription_members = client.query_all(format_soql(
+            """SELECT Id, LastModifiedDate FROM cfg_Subscription_Member__c
+            WHERE cfg_Subscription__c = '{}' AND cfg_Contact__c = '{}'
+            ORDER BY LastModifiedDate, Id ASC""".format(list_id, contact_id)))
+
+        try:
+            # get the most recent Subscription Member, if one exists
+            sub_member_id = subscription_members['records'][-1]['Id']
+        except IndexError:
+            new_sub = client.cfg_Subscription_Member__c.create({
+                'cfg_Subscription__c': list_id,
+                'cfg_Contact__c': contact_id,
+                'cfg_Active__c': True,
+                'nypr_Subscription_Source__c': self.source,
+                'cfg_Opt_In_Date__c': datetime.now(pytz.timezone("UTC")).strftime("%Y-%m-%d")
+            })
+            if new_sub['errors']:
+                failure_response("User could not be subscribed; error adding subscription member")
+
+            return {"status": "subscribed", "detail": "Email successfully added"}
+
+        update_sub_status = client.cfg_Subscription_Member__c.update('Id/{}'.format(sub_member_id),{
+            'nypr_Subscription_Source__c': self.source,
+            'cfg_Active__c': True,
+            'cfg_Opt_In_Date__c': datetime.now(pytz.timezone("UTC")).strftime("%Y-%m-%d")
+        })
+
+        if update_sub_status != 200:
+            failure_response("Error updating subscription")
+
+        return {"status": "subscribed", "detail": "Subscription successfully updated"}
 
 
 class ListRequestHandler:
