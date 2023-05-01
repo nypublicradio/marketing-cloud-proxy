@@ -29,7 +29,7 @@ setup(
         'Salesforce-FuelSDK @ git+https://github.com/nypublicradio/FuelSDK-Python.git',
         'Werkzeug==1.0.1', # for compatitility with Flask 1.x
         'boto3~=1.21',
-        'flask==1.1.4',
+        'flask==2.3.2',
         'markupsafe==2.0.1',
         'python-dotenv',
         'pytz',
