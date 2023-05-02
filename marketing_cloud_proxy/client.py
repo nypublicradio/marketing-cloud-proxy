@@ -185,7 +185,7 @@ class EmailSignupRequestHandler:
             if getattr(self, "validity_status", None) and getattr(
                 self, "validity_name", None
             ):
-                contact_dict["EmailVerificationScore"] = (
+                contact_dict["cfg_Email_Verification_Score__c"] = (
                     f"{self.validity_name.title()}: {self.validity_status.title()}",
                 )
             contact = client.Contact.create(contact_dict)
