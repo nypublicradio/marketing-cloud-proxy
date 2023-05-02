@@ -154,11 +154,11 @@ class EmailSignupRequestHandler:
         return bool(re.match(r"[^@]+@[^@]+\.[^@]+", self.email))
 
     def subscribe(self):
-        '''
+        """
         Checks that the email list from the request exists and subscribes the
         email from the request to the list, creating a new Salesforce "Contact"
         if one doesn't exist and creating/updating the "Subscription Member".
-        '''
+        """
         try:
             client = SFClient()
         except SalesforceAuthenticationFailed as e:
@@ -177,11 +177,14 @@ class EmailSignupRequestHandler:
             # get the most recent Contact for this email, if one exists
             contact_id = contacts["records"][-1]["Id"]
         except IndexError:
-            contact_dict = {
-                "LastName": getattr(self, "last_name", "NoLastName"),
-                "FirstName": getattr(self, "first_name", ""),
-                "Email": format_soql(self.email),
-            }
+            contact_dict = {}
+            if getattr(self, "last_name", None):
+                contact_dict["LastName"] = self.last_name
+            if getattr(self, "first_name", None):
+                contact_dict["FirstName"] = self.first_name
+            if getattr(self, "email", None):
+                contact_dict["Email"] = format_soql(self.email)
+
             if getattr(self, "validity_status", None) and getattr(
                 self, "validity_name", None
             ):
@@ -429,9 +432,9 @@ class OptinmonsterWebhookHandler(EmailSignupRequestHandler):
             except (BadRequestKeyError, KeyError):
                 raise InvalidDataError("Requires both an email and a list")
 
-            self.source = request_dict["campaign"]["title"]
-            self.first_name = request_dict["lead"]["firstName"]
-            self.last_name = request_dict["lead"]["lastName"]
+            self.source = request_dict.get("campaign", {}).get("title", None)
+            self.first_name = request_dict.get("lead", {}).get("firstName", None)
+            self.last_name = request_dict.get("lead", {}).get("lastName", None)
 
         # check validity of email
         try:
@@ -468,6 +471,7 @@ class OptinmonsterWebhookHandler(EmailSignupRequestHandler):
             # return a 200 response
             return {"status": "subscribed"}
         return super().subscribe()
+
 
 class ListRequestHandler:
     def lists_json(self):
