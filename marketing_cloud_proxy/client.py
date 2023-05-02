@@ -420,6 +420,11 @@ class OptinmonsterWebhookHandler(EmailSignupRequestHandler):
 
             try:
                 self.email = request_dict["lead"]["email"]
+
+                # OptinMonster special case
+                if self.email == "hello@optinmonster.com":
+                    return
+
                 self.lists = request_dict["lead_options"]["list"].split("++")
             except (BadRequestKeyError, KeyError):
                 raise InvalidDataError("Requires both an email and a list")
