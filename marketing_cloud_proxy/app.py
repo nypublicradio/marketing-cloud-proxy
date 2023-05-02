@@ -6,8 +6,11 @@ from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 from marketing_cloud_proxy.client import (
-    EmailSignupRequestHandler, failure_response, ListRequestHandler,
-    SupportingCastWebhookHandler
+    EmailSignupRequestHandler,
+    failure_response,
+    ListRequestHandler,
+    SupportingCastWebhookHandler,
+    OptinmonsterWebhookHandler
 )
 from marketing_cloud_proxy.mailchimp import MailchimpForwarder
 from marketing_cloud_proxy.errors import InvalidDataError
@@ -68,3 +71,10 @@ def lists():
 def supporting_cast():
     handler = SupportingCastWebhookHandler(request)
     return handler.response
+
+
+@app.route(f"/{path_prefix}/optinmonster", methods=["POST"])
+def optinmonster():
+    handler = OptinmonsterWebhookHandler(request)
+    response = handler.subscribe()
+    return response
