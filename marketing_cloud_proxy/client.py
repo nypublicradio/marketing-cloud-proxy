@@ -154,11 +154,6 @@ class EmailSignupRequestHandler:
         return bool(re.match(r"[^@]+@[^@]+\.[^@]+", self.email))
 
     def subscribe(self):
-        """
-        Checks that the email list from the request exists and subscribes the
-        email from the request to the list, creating a new Salesforce "Contact"
-        if one doesn't exist and creating/updating the "Subscription Member".
-        """
         try:
             client = SFClient()
         except SalesforceAuthenticationFailed as e:
@@ -167,7 +162,7 @@ class EmailSignupRequestHandler:
         contacts = client.query_all(
             format_soql(
                 """SELECT Id, LastModifiedDate from Contact WHERE Email = '{}'
-               ORDER BY LastModifiedDate, Id ASC""".format(
+            ORDER BY LastModifiedDate, Id ASC""".format(
                     self.email
                 )
             )
@@ -177,9 +172,18 @@ class EmailSignupRequestHandler:
             # get the most recent Contact for this email, if one exists
             contact_id = contacts["records"][-1]["Id"]
         except IndexError:
-            contact = client.Contact.create(
-                {"LastName": "NoLastName", "Email": format_soql(self.email)}
-            )
+            contact_dict = {
+                "LastName": getattr(self, "last_name", "NoLastName"),
+                "FirstName": getattr(self, "first_name", ""),
+                "Email": format_soql(self.email),
+            }
+            if getattr(self, "validity_status", None) and getattr(
+                self, "validity_name", None
+            ):
+                contact_dict["EmailVerificationScore"] = (
+                    f"{self.validity_name.title()}: {self.validity_status.title()}",
+                )
+            contact = client.Contact.create(contact_dict)
             if contact["errors"]:
                 return failure_response(
                     "User could not be subscribed; error adding Contact"
@@ -412,6 +416,7 @@ class OptinmonsterWebhookHandler(EmailSignupRequestHandler):
             self.source = request_dict["campaign"]["title"]
             self.first_name = request_dict["lead"]["firstName"]
             self.last_name = request_dict["lead"]["lastName"]
+            self.validity_array_value = None
 
             # check validity of email
             try:
@@ -436,48 +441,6 @@ class OptinmonsterWebhookHandler(EmailSignupRequestHandler):
             raise InvalidDataError("No email or list was provided")
         except (BadRequestKeyError, KeyError):
             raise InvalidDataError("Requires both an email and a list")
-
-    def subscribe(self):
-        try:
-            client = SFClient()
-        except SalesforceAuthenticationFailed as e:
-            return failure_response(e.__str__())
-
-        contacts = client.query_all(
-            format_soql(
-                """SELECT Id, LastModifiedDate from Contact WHERE Email = '{}'
-            ORDER BY LastModifiedDate, Id ASC""".format(
-                    self.email
-                )
-            )
-        )
-
-        try:
-            # get the most recent Contact for this email, if one exists
-            contact_id = contacts["records"][-1]["Id"]
-        except IndexError:
-            contact = client.Contact.create(
-                {
-                    "LastName": self.get("last_name", "NoLastName"),
-                    "FirstName": self.get("first_name", ""),
-                    "Email": format_soql(self.email),
-                    "EmailVerificationScore": f"{self.validity_name.title()}: {self.validity_status.title()}",
-                }
-            )
-            if contact["errors"]:
-                return failure_response(
-                    "User could not be subscribed; error adding Contact"
-                )
-
-            contact_id = contact.get("id")
-
-        subscription = {}
-        for email_list in self.lists:
-            subscription = self._subscribe_to_each(client, email_list, contact_id)
-            if "status" not in subscription or subscription.get("status") == "failure":
-                break
-
-        return subscription
 
 
 class ListRequestHandler:
