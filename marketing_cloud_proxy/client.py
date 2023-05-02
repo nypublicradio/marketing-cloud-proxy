@@ -154,6 +154,11 @@ class EmailSignupRequestHandler:
         return bool(re.match(r"[^@]+@[^@]+\.[^@]+", self.email))
 
     def subscribe(self):
+        '''
+        Checks that the email list from the request exists and subscribes the
+        email from the request to the list, creating a new Salesforce "Contact"
+        if one doesn't exist and creating/updating the "Subscription Member".
+        '''
         try:
             client = SFClient()
         except SalesforceAuthenticationFailed as e:
@@ -403,7 +408,9 @@ class OptinmonsterWebhookHandler(EmailSignupRequestHandler):
         try:
             if not request.form and not request.data:
                 raise NoDataProvidedError
-
+        except NoDataProvidedError:
+            raise InvalidDataError("No email or list was provided")
+        else:
             if request.data:
                 # POST submitted via api
                 request_dict = json.loads(request.data)
@@ -411,22 +418,30 @@ class OptinmonsterWebhookHandler(EmailSignupRequestHandler):
                 # POST submitted via form
                 request_dict = request.form
 
-            self.email = request_dict["lead"]["email"]
-            self.lists = request_dict["lead_options"]["list"].split("++")
+            try:
+                self.email = request_dict["lead"]["email"]
+                self.lists = request_dict["lead_options"]["list"].split("++")
+            except (BadRequestKeyError, KeyError):
+                raise InvalidDataError("Requires both an email and a list")
+
             self.source = request_dict["campaign"]["title"]
             self.first_name = request_dict["lead"]["firstName"]
             self.last_name = request_dict["lead"]["lastName"]
-            self.validity_array_value = None
 
-            # check validity of email
+        # check validity of email
+        try:
+            headers = {}
+            headers["X-API-KEY"] = os.environ.get("EVEREST_API_KEY")
+            response = requests.get(
+                f"https://api.everest.validity.com/api/2.0/validation/address/{self.email}",
+                headers=headers,
+            )
+
+        except requests.exceptions.RequestException as e:
+            print(f"Error connecting to Everest API: {e}")
+
+        else:
             try:
-                headers = {}
-                headers["X-API-KEY"] = os.environ.get("EVEREST_API_KEY")
-                response = requests.get(
-                    f"https://api.everest.validity.com/api/2.0/validation/address/{self.email}",
-                    headers=headers,
-                )
-
                 validity_response = response.json()
                 self.validity_status = validity_response["results"][
                     "status"
@@ -434,13 +449,8 @@ class OptinmonsterWebhookHandler(EmailSignupRequestHandler):
                 self.validity_name = validity_response["results"][
                     "name"
                 ]  # e.g. Valid, Domain Invalid, etc.
-            except requests.exceptions.RequestException as e:
-                print(f"Error connecting to Everest API: {e}")
-
-        except NoDataProvidedError:
-            raise InvalidDataError("No email or list was provided")
-        except (BadRequestKeyError, KeyError):
-            raise InvalidDataError("Requires both an email and a list")
+            except KeyError:
+                print("Error parsing Everest API response")
 
 
 class ListRequestHandler:
