@@ -405,7 +405,7 @@ class OptinmonsterWebhookHandler(EmailSignupRequestHandler):
     """
 
     def __init__(self, request):
-        print(request.json())
+        print(request.data))
         try:
             if not request.form and not request.data:
                 raise NoDataProvidedError
