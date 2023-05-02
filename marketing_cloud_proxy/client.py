@@ -452,6 +452,17 @@ class OptinmonsterWebhookHandler(EmailSignupRequestHandler):
             except KeyError:
                 print("Error parsing Everest API response")
 
+    def subscribe(self):
+        """OptInMonster needs a special case for its test code; the test code
+        does not send an list, which we typically would reject, but for it to
+        accept the webhook it needs a successful response to its sample data.
+
+        We give a successful response if the email is hello@optinmonster.com,
+        otherwise we defer to the superclass."""
+        if self.email == "hello@optinmonster.com":
+            # return a 200 response
+            return {"status": "subscribed"}
+        return super().subscribe()
 
 class ListRequestHandler:
     def lists_json(self):
