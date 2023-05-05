@@ -178,8 +178,13 @@ class EmailSignupRequestHandler:
             contact_id = contacts["records"][-1]["Id"]
         except IndexError:
             contact_dict = {}
+
+            # LastName is required for Contact creation
             if getattr(self, "last_name", None):
                 contact_dict["LastName"] = self.last_name
+            else:
+                contact_dict["LastName"] = "NoLastName"
+
             if getattr(self, "first_name", None):
                 contact_dict["FirstName"] = self.first_name
             if getattr(self, "email", None):
