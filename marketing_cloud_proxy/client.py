@@ -440,6 +440,8 @@ class OptinmonsterWebhookHandler(EmailSignupRequestHandler):
                 raise InvalidDataError("Requires both an email and a list")
 
             self.source = request_dict.get("campaign", {}).get("title", None)
+            if self.source:
+                self.source = f"optInMonster_{self.source}"
             self.first_name = request_dict.get("lead", {}).get("firstName", None)
             self.last_name = request_dict.get("lead", {}).get("lastName", None)
 
