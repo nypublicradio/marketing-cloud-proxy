@@ -142,8 +142,14 @@ class EmailSignupRequestHandler:
                 request_dict = request.form
 
             self.lists = request_dict["list"].split("++")
-            self.email = request_dict["email"]
             self.source = request_dict.get("source", "")
+
+            if request_dict.get("email"):
+                self.email = request_dict["email"]
+            elif request_dict.get("record"):
+                self.email = request_dict["record"]["email"]
+            else:
+                raise NoDataProvidedError
 
         except NoDataProvidedError:
             raise InvalidDataError("No email or list was provided")
