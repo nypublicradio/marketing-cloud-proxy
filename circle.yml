@@ -10,7 +10,7 @@ jobs:
   test:
     working_directory: ~/marketing-cloud-proxy
     docker:
-      - image: circleci/python:3.7
+      - image: circleci/python:3.8
     environment:
       CC_REPORTER: "https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64"
     steps:
@@ -49,7 +49,7 @@ jobs:
   build_lambda:
     working_directory: ~/marketing-cloud-proxy
     docker:
-      - image: circleci/python:3.7
+      - image: circleci/python:3.8
     steps:
       - checkout
       - run:
@@ -61,7 +61,7 @@ jobs:
             pip install \
               --platform manylinux2010_x86_64 \
               --implementation cp \
-              --python 3.7 \
+              --python 3.8 \
               --only-binary=:all: --upgrade \
               --target workspace/pkg \
               cryptography
@@ -75,7 +75,7 @@ jobs:
   deploy_lambda:
     working_directory: ~/marketing-cloud-proxy
     docker:
-      - image: circleci/python:3.7
+      - image: circleci/python:3.8
     steps:
       - checkout
       - attach_workspace:
