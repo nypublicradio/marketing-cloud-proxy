@@ -30,7 +30,7 @@ setup(
         'Werkzeug==1.0.1', # for compatitility with Flask 1.x
         'boto3~=1.21',
         'lxml==4.9.2',
-        'flask==1.1.4',
+        'flask==2.2.5',
         'markupsafe==2.0.1',
         'python-dotenv',
         'pytz',
