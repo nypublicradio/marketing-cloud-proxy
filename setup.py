@@ -37,7 +37,7 @@ setup(
         'requests',
         'sentry-sdk[flask]',
         'serverless-wsgi<2.0', # for compatibility with Werkzeug 1.x
-        'setuptools==57.5.0',
+        'setuptools==65.5.1',
         'simple-salesforce',
     ],
     license='BSD',
