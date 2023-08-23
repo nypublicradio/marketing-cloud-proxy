@@ -156,8 +156,33 @@ class EmailSignupRequestHandler:
         except (BadRequestKeyError, KeyError):
             raise InvalidDataError("Requires both an email and a list")
 
-    def is_email_valid(self):
+    def is_email_syntactically_valid(self):
         return bool(re.match(r"[^@]+@[^@]+\.[^@]+", self.email))
+
+    def check_email_validity(self):
+        try:
+            headers = {}
+            headers["X-API-KEY"] = os.environ.get("EVEREST_API_KEY")
+            response = requests.get(
+                f"https://api.everest.validity.com/api/2.0/validation/address/{self.email}",
+                headers=headers,
+            )
+
+        except requests.exceptions.RequestException as e:
+            print(f"Error connecting to Everest API: {e}")
+
+        else:
+            try:
+                validity_response = response.json()
+                self.validity_status = validity_response["results"][
+                    "status"
+                ]  # valid/invalid
+                self.validity_name = validity_response["results"][
+                    "name"
+                ]  # e.g. Valid, Domain Invalid, etc.
+            except KeyError:
+                print("Error parsing Everest API response")
+
 
     def subscribe(self):
         """
@@ -165,6 +190,8 @@ class EmailSignupRequestHandler:
         email from the request to the list, creating a new Salesforce "Contact"
         if one doesn't exist and creating/updating the "Subscription Member".
         """
+        self.check_email_validity()
+
         try:
             client = SFClient()
         except SalesforceAuthenticationFailed as e:
@@ -200,7 +227,7 @@ class EmailSignupRequestHandler:
                 self, "validity_name", None
             ):
                 validity_value = (
-                    f"{self.validity_name.title()}: {self.validity_status.title()}"
+                    f"{self.validity_status.title()}: {self.validity_name.title()}"
                 )
                 print(validity_value)
                 contact_dict["cfg_Email_Verification_Score__c"] = validity_value
@@ -450,30 +477,6 @@ class OptinmonsterWebhookHandler(EmailSignupRequestHandler):
                 self.source = f"optInMonster_{self.source}"
             self.first_name = request_dict.get("lead", {}).get("firstName", None)
             self.last_name = request_dict.get("lead", {}).get("lastName", None)
-
-        # check validity of email
-        try:
-            headers = {}
-            headers["X-API-KEY"] = os.environ.get("EVEREST_API_KEY")
-            response = requests.get(
-                f"https://api.everest.validity.com/api/2.0/validation/address/{self.email}",
-                headers=headers,
-            )
-
-        except requests.exceptions.RequestException as e:
-            print(f"Error connecting to Everest API: {e}")
-
-        else:
-            try:
-                validity_response = response.json()
-                self.validity_status = validity_response["results"][
-                    "status"
-                ]  # valid/invalid
-                self.validity_name = validity_response["results"][
-                    "name"
-                ]  # e.g. Valid, Domain Invalid, etc.
-            except KeyError:
-                print("Error parsing Everest API response")
 
     def subscribe(self):
         """OptInMonster needs a special case for its test code; the test code

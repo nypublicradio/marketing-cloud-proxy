@@ -44,7 +44,7 @@ def subscribe():
     except InvalidDataError as e:
         return failure_response(e.message)
 
-    if not email_handler.is_email_valid():
+    if not email_handler.is_email_syntactically_valid():
         return failure_response("Email address is invalid")
 
     mf_list = map(
