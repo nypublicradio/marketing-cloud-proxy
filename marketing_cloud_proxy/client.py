@@ -141,7 +141,12 @@ class EmailSignupRequestHandler:
                 # POST submitted via form
                 request_dict = request.form
 
-            self.lists = request_dict["list"].split("++")
+            # Check if 'lists' query parameter exists in the URL
+            if 'lists' in request.args:
+                self.lists = request.args.get('lists').split('++')
+            else:
+                self.lists = request_dict["list"].split("++")
+
             self.source = request_dict.get("source", "")
 
             if request_dict.get("email"):
