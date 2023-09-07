@@ -150,7 +150,7 @@ class EmailSignupRequestHandler:
             elif "list" in request_dict:
                 self.lists = request_dict["list"].split("++")
             else:
-                raise NoDataProvidedError
+                self.lists = "WNYC Weekly Brief++WNYC Membership".split('++')
 
 
             self.source = request_dict.get("source", "")
@@ -159,7 +159,6 @@ class EmailSignupRequestHandler:
                 self.email = request_dict["email"]
             elif request_dict.get("record"):
                 self.email = request_dict["record"]["email"]
-                self.lists = "WNYC Weekly Brief++WNYC Membership".split('++')
             else:
                 raise NoDataProvidedError
 
