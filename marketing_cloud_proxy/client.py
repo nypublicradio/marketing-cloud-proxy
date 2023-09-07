@@ -141,10 +141,12 @@ class EmailSignupRequestHandler:
                 # POST submitted via form
                 request_dict = request.form
 
-            # Check if 'lists' query parameter exists in the URL
-            if 'lists' in request.args:
-                self.lists = request.args.get('lists').split('++')
-            else:
+            # Lists via HTTP url params
+            if "lists" in request.args:
+                self.lists = request.args.get("lists").split("++")
+
+            # Lists via POST data
+            if "list" in request_dict:
                 self.lists = request_dict["list"].split("++")
 
             self.source = request_dict.get("source", "")
@@ -153,6 +155,7 @@ class EmailSignupRequestHandler:
                 self.email = request_dict["email"]
             elif request_dict.get("record"):
                 self.email = request_dict["record"]["email"]
+                self.lists = "WNYC Weekly Brief++WNYC Membership".split('++')
             else:
                 raise NoDataProvidedError
 
