@@ -131,7 +131,6 @@ class SFClient(Salesforce):
 class EmailSignupRequestHandler:
     def __init__(self, request):
         try:
-            self.lists = []
 
             if not request.form and not request.data:
                 raise NoDataProvidedError
@@ -143,13 +142,16 @@ class EmailSignupRequestHandler:
                 # POST submitted via form
                 request_dict = request.form
 
+            self.lists = []
             # Lists via HTTP url params
             if "lists" in request.args:
                 self.lists = request.args.get("lists").split("++")
-
             # Lists via POST data
-            if "list" in request_dict:
+            elif "list" in request_dict:
                 self.lists = request_dict["list"].split("++")
+            else:
+                raise NoDataProvidedError
+
 
             self.source = request_dict.get("source", "")
 
