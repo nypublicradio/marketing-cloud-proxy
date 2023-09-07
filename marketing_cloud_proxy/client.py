@@ -131,35 +131,56 @@ class SFClient(Salesforce):
 class EmailSignupRequestHandler:
     def __init__(self, request):
         try:
+            print("Init started...")
             if not request.form and not request.data:
+                print("No form or data provided...")
                 raise NoDataProvidedError
 
             if request.data:
+                print("Data found, processing it as API request...")
                 # POST submitted via api
                 request_dict = json.loads(request.data)
             else:
+                print("Data found, processing it as form request...")
                 # POST submitted via form
                 request_dict = request.form
 
+            print("Data processed...")
+
             # Check if 'lists' query parameter exists in the URL
-            if 'lists' in request.args:
-                self.lists = request.args.get('lists').split('++')
+            if "lists" in request.args:
+                print("Lists parameter found in request arguments...")
+                self.lists = request.args.get("lists").split("++")
             else:
+                print("Lists parameter not found in request arguments, searching in data...")
                 self.lists = request_dict["list"].split("++")
 
+            print("Lists fetched and processed: ", self.lists)
+
             self.source = request_dict.get("source", "")
+            print("Source fetched: ", self.source)
 
             if request_dict.get("email"):
+                print("Email found...")
                 self.email = request_dict["email"]
             elif request_dict.get("record"):
+                print("Record found, fetching email from record...")
                 self.email = request_dict["record"]["email"]
             else:
+                print("No email provided...")
                 raise NoDataProvidedError
 
+            print("Email fetched: ", self.email)
+
         except NoDataProvidedError:
+            print("Error: NoDataProvidedError")
             raise InvalidDataError("No email or list was provided")
         except (BadRequestKeyError, KeyError):
+            print("Error: Key Error")
             raise InvalidDataError("Requires both an email and a list")
+
+        print("Init finished...")
+
 
     def is_email_syntactically_valid(self):
         return bool(re.match(r"[^@]+@[^@]+\.[^@]+", self.email))
@@ -187,7 +208,6 @@ class EmailSignupRequestHandler:
                 ]  # e.g. Valid, Domain Invalid, etc.
             except KeyError:
                 print("Error parsing Everest API response")
-
 
     def subscribe(self):
         """
