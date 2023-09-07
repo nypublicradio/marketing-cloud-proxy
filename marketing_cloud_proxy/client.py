@@ -149,9 +149,8 @@ class EmailSignupRequestHandler:
             # Lists via POST data
             elif "list" in request_dict:
                 self.lists = request_dict["list"].split("++")
-            else:
-                self.lists = "WNYC Weekly Brief++WNYC Membership".split('++')
-
+            elif "record" not in request_dict:
+                raise NoDataProvidedError
 
             self.source = request_dict.get("source", "")
 
