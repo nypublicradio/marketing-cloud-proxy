@@ -27,7 +27,7 @@ setup(
     install_requires=[
         'PyJWT==1.7.1',
         'Salesforce-FuelSDK @ git+https://github.com/nypublicradio/FuelSDK-Python.git',
-        'Werkzeug==1.0.1', # for compatitility with Flask 1.x
+        'Werkzeug==3.0.1', # for compatitility with Flask 1.x
         'boto3~=1.21',
         'lxml==4.9.2',
         'flask==1.1.4',
