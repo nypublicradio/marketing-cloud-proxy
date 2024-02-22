@@ -204,7 +204,9 @@ class EmailSignupRequestHandler:
 
         # Check if email is invalid based on validity status or name
         if self.validity_status == "Invalid" or self.validity_name == "Invalid":
-            return failure_response("Email is invalid. Subscription not processed.")
+            # This message is a faux subscription response; the email is quietly
+            # not forwarded to Salesforce
+            return {"status": "subscribed", "detail": "Subscription successfully updated"}
 
         try:
             client = SFClient()
