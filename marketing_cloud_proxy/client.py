@@ -206,7 +206,7 @@ class EmailSignupRequestHandler:
         if self.validity_status == "Invalid" or self.validity_name == "Invalid":
             # This message is a faux subscription response; the email is quietly
             # not forwarded to Salesforce
-            return {"status": "subscribed", "detail": "Subscription successfully updated"}
+            return {"status": "subscribed", "detail": "Subscription quietly updated"}
 
         try:
             client = SFClient()
