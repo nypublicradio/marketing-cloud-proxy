@@ -203,8 +203,7 @@ class EmailSignupRequestHandler:
         self.check_email_validity()
 
         # Check if email is invalid based on validity status or name
-        if self.validity_status == "Invalid" or self.validity_name == "Invalid":
-            # This message is a faux subscription response; the email is quietly
+        if "invalid" in self.validity_status.lower() or "invalid" in self.validity_name.lower():     # This message is a faux subscription response; the email is quietly
             # not forwarded to Salesforce
             return {"status": "subscribed", "detail": "Subscription quietly updated"}
 
